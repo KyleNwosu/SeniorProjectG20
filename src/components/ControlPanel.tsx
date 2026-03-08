@@ -1,12 +1,29 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Square, Play, Pause } from "lucide-react";
+import {
+  ArrowUp,
+  ArrowDown,
+  ArrowLeft,
+  ArrowRight,
+  Square,
+  Play,
+  Pause,
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useRobotStore } from "@/store/useRobotStore";
+import type { RobotOperationalStatus } from "@/types";
 
 export const ControlPanel = () => {
   const { toast } = useToast();
+  const { setStatus, setCurrentTask } = useRobotStore();
 
-  const handleControl = (action: string) => {
+  const handleControl = (
+    action: string,
+    status: RobotOperationalStatus,
+    task: string,
+  ) => {
+    setStatus(status);
+    setCurrentTask(task);
     toast({
       title: "Command Sent",
       description: `Robot ${action}`,
@@ -23,17 +40,21 @@ export const ControlPanel = () => {
           <Button
             variant="outline"
             size="icon"
-            onClick={() => handleControl("moving forward")}
+            onClick={() =>
+              handleControl("moving forward", "active", "Moving Forward")
+            }
             className="w-12 h-12"
           >
             <ArrowUp className="h-5 w-5" />
           </Button>
-          
+
           <div className="flex gap-2">
             <Button
               variant="outline"
               size="icon"
-              onClick={() => handleControl("turning left")}
+              onClick={() =>
+                handleControl("turning left", "active", "Turning Left")
+              }
               className="w-12 h-12"
             >
               <ArrowLeft className="h-5 w-5" />
@@ -41,7 +62,7 @@ export const ControlPanel = () => {
             <Button
               variant="outline"
               size="icon"
-              onClick={() => handleControl("stopped")}
+              onClick={() => handleControl("stopped", "stopped", "Idle")}
               className="w-12 h-12"
             >
               <Square className="h-5 w-5" />
@@ -49,17 +70,21 @@ export const ControlPanel = () => {
             <Button
               variant="outline"
               size="icon"
-              onClick={() => handleControl("turning right")}
+              onClick={() =>
+                handleControl("turning right", "active", "Turning Right")
+              }
               className="w-12 h-12"
             >
               <ArrowRight className="h-5 w-5" />
             </Button>
           </div>
-          
+
           <Button
             variant="outline"
             size="icon"
-            onClick={() => handleControl("moving backward")}
+            onClick={() =>
+              handleControl("moving backward", "active", "Moving Backward")
+            }
             className="w-12 h-12"
           >
             <ArrowDown className="h-5 w-5" />
@@ -69,7 +94,7 @@ export const ControlPanel = () => {
         <div className="flex gap-2 pt-4 border-t">
           <Button
             className="flex-1"
-            onClick={() => handleControl("started")}
+            onClick={() => handleControl("started", "active", "Running")}
           >
             <Play className="h-4 w-4 mr-2" />
             Start
@@ -77,7 +102,7 @@ export const ControlPanel = () => {
           <Button
             variant="secondary"
             className="flex-1"
-            onClick={() => handleControl("paused")}
+            onClick={() => handleControl("paused", "paused", "Paused")}
           >
             <Pause className="h-4 w-4 mr-2" />
             Pause
