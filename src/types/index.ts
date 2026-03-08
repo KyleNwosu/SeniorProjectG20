@@ -8,3 +8,16 @@ export interface RobotStatus {
   connection: RobotConnectionStatus;
   currentTask: string;
 }
+
+export type RobotCommand =
+  | "move-forward"
+  | "move-backward"
+  | "turn-left"
+  | "turn-right"
+  | "wait";
+
+export interface Task {
+  id: number;
+  action: RobotCommand;
+  duration: string;
+}
