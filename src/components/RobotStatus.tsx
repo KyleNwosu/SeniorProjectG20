@@ -1,8 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Battery, Wifi, Activity } from "lucide-react";
+import { useRobotStore } from "@/store/useRobotStore";
 
 export const RobotStatus = () => {
+  const { robotStatus } = useRobotStore();
   return (
     <Card>
       <CardHeader>
@@ -14,9 +16,9 @@ export const RobotStatus = () => {
       <CardContent className="space-y-4">
         <div className="flex items-center justify-between">
           <span className="text-muted-foreground">Status</span>
-          <Badge variant="default">Active</Badge>
+          <Badge variant="default">{robotStatus.status}</Badge>
         </div>
-        
+
         <div className="flex items-center justify-between">
           <span className="text-muted-foreground flex items-center gap-2">
             <Battery className="h-4 w-4" />
@@ -24,9 +26,12 @@ export const RobotStatus = () => {
           </span>
           <div className="flex items-center gap-2">
             <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
-              <div className="h-full bg-primary" style={{ width: "85%" }} />
+              <div
+                className="h-full bg-primary"
+                style={{ width: `${robotStatus.battery}%` }}
+              />
             </div>
-            <span className="text-sm font-medium">85%</span>
+            <span className="text-sm font-medium">{robotStatus.battery}%</span>
           </div>
         </div>
 
@@ -35,12 +40,12 @@ export const RobotStatus = () => {
             <Wifi className="h-4 w-4" />
             Connection
           </span>
-          <Badge variant="secondary">Connected</Badge>
+          <Badge variant="secondary">{robotStatus.connection}</Badge>
         </div>
 
         <div className="flex items-center justify-between">
           <span className="text-muted-foreground">Current Task</span>
-          <span className="text-sm font-medium">Idle</span>
+          <span className="text-sm font-medium">{robotStatus.currentTask}</span>
         </div>
       </CardContent>
     </Card>
