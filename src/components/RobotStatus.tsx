@@ -2,9 +2,22 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Battery, Wifi, Activity } from "lucide-react";
 import { useRobotStore } from "@/store/useRobotStore";
+import { useQuery } from "@tanstack/react-query";
+import { fetchRobotStatus } from "@/services/robotApi";
 
 export const RobotStatus = () => {
   const { robotStatus } = useRobotStore();
+  const { isLoading } = useQuery({
+    queryKey: ["robotStatus"],
+    queryFn: fetchRobotStatus,
+    staleTime: 30000,
+  });
+
+  if (isLoading)
+    return (
+      <p className="text-sm text-muted-foreground p-4">Loading status...</p>
+    );
+
   return (
     <Card>
       <CardHeader>
