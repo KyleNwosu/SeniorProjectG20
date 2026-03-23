@@ -8,8 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useRobotStore } from "@/store/useRobotStore";
 import { useMutation } from "@tanstack/react-query";
 import { sendCommand } from "@/services/robotApi";
-import type { CommandType } from "@/services/robotApi";
-import type { RobotOperationalStatus } from "@/types";
+import type { CommandType, RobotOperationalStatus } from "@/types";
 
 export const ControlPanel = () => {
   const { toast } = useToast();

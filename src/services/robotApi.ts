@@ -1,4 +1,4 @@
-import type { RobotStatus } from "@/types";
+import type { RobotStatus, RobotCommand, CommandType } from "@/types";
 
 const BRIDGE = import.meta.env.VITE_BRIDGE_URL ?? "http://localhost:8000";
 
@@ -11,20 +11,6 @@ export const fetchRobotStatus = async (): Promise<RobotStatus> => {
 };
 
 // ── Commands ──────────────────────────────────────────────────────────────────
-
-export type CommandType =
-  | "move_forward"
-  | "move_backward"
-  | "move_left"
-  | "move_right"
-  | "move_up"
-  | "move_down"
-  | "rotate_left"
-  | "rotate_right"
-  | "stop"
-  | "go_home"
-  | "gripper_open"
-  | "gripper_close";
 
 export const sendCommand = async (
   type: CommandType,
@@ -44,7 +30,7 @@ export const sendCommand = async (
 // ── Sequences ─────────────────────────────────────────────────────────────────
 
 export interface SequenceTask {
-  action: string;
+  action: RobotCommand;
   duration: number;
 }
 
