@@ -8,7 +8,7 @@ import { BRIDGE_WS_URL } from "@/services/robotApi";
  * Call once at the app root (Index.tsx).
  */
 export const useRobotSocket = () => {
-  const { setStatus, setConnection, setBattery, setCurrentTask } = useRobotStore();
+  const { updateFromFrame, setConnection } = useRobotStore();
 
   useEffect(() => {
     let ws: WebSocket;
@@ -25,10 +25,7 @@ export const useRobotSocket = () => {
       ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data as string);
-          setStatus(data.status);
-          setBattery(data.battery);
-          setConnection(data.connection);
-          setCurrentTask(data.currentTask);
+          updateFromFrame(data);
         } catch {
           // malformed frame — ignore
         }
