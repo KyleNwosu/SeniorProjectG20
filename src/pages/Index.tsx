@@ -4,8 +4,11 @@ import { ControlPanel } from "@/components/ControlPanel";
 import { TaskBuilder } from "@/components/TaskBuilder";
 import { Scheduler } from "@/components/Scheduler";
 import { Bot } from "lucide-react";
+import { useRobotSocket } from "@/hooks/useRobotSocket";
 
 const Index = () => {
+  useRobotSocket();
+
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b">

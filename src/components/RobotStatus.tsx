@@ -2,21 +2,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Battery, Wifi, Activity } from "lucide-react";
 import { useRobotStore } from "@/store/useRobotStore";
-import { useQuery } from "@tanstack/react-query";
-import { fetchRobotStatus } from "@/services/robotApi";
+
+const CONNECTION_VARIANT: Record<string, "default" | "secondary" | "destructive"> = {
+  connected:    "default",
+  connecting:   "secondary",
+  disconnected: "destructive",
+};
 
 export const RobotStatus = () => {
   const { robotStatus } = useRobotStore();
-  const { isLoading } = useQuery({
-    queryKey: ["robotStatus"],
-    queryFn: fetchRobotStatus,
-    staleTime: 30000,
-  });
-
-  if (isLoading)
-    return (
-      <p className="text-sm text-muted-foreground p-4">Loading status...</p>
-    );
 
   return (
     <Card>
@@ -40,7 +34,7 @@ export const RobotStatus = () => {
           <div className="flex items-center gap-2">
             <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
               <div
-                className="h-full bg-primary"
+                className="h-full bg-primary transition-all"
                 style={{ width: `${robotStatus.battery}%` }}
               />
             </div>
@@ -53,7 +47,9 @@ export const RobotStatus = () => {
             <Wifi className="h-4 w-4" />
             Connection
           </span>
-          <Badge variant="secondary">{robotStatus.connection}</Badge>
+          <Badge variant={CONNECTION_VARIANT[robotStatus.connection] ?? "secondary"}>
+            {robotStatus.connection}
+          </Badge>
         </div>
 
         <div className="flex items-center justify-between">

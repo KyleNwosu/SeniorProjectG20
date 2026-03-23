@@ -5,8 +5,8 @@ import type { Task, RobotCommand } from "@/types";
 interface TaskStore {
   tasks: Task[];
   addTask: () => void;
-  removeTask: (id: number) => void;
-  updateTask: (id: number, field: keyof Task, value: string | RobotCommand) => void;
+  removeTask: (id: string) => void;
+  updateTask: (id: string, field: keyof Task, value: string | number | RobotCommand) => void;
   clearTasks: () => void;
 }
 
@@ -16,7 +16,10 @@ export const useTaskStore = create<TaskStore>()(
       tasks: [],
       addTask: () =>
         set((state) => ({
-          tasks: [...state.tasks, { id: Date.now(), action: "move-forward", duration: "5" }],
+          tasks: [
+            ...state.tasks,
+            { id: crypto.randomUUID(), action: "move_forward", duration: 5 },
+          ],
         })),
       removeTask: (id) =>
         set((state) => ({ tasks: state.tasks.filter((t) => t.id !== id) })),

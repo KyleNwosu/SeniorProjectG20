@@ -4,43 +4,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Clock, Plus, Trash2 } from "lucide-react";
-import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-
-interface Schedule {
-  id: number;
-  time: string;
-  task: string;
-  frequency: string;
-}
+import { useScheduleStore } from "@/store/useScheduleStore";
+import type { ScheduledTask, ScheduleFrequency } from "@/types";
 
 export const Scheduler = () => {
-  const [schedules, setSchedules] = useState<Schedule[]>([]);
+  const { schedules, addSchedule, removeSchedule, updateSchedule } = useScheduleStore();
   const { toast } = useToast();
-
-  const addSchedule = () => {
-    setSchedules([...schedules, { 
-      id: Date.now(), 
-      time: "09:00", 
-      task: "cleaning",
-      frequency: "daily"
-    }]);
-  };
-
-  const removeSchedule = (id: number) => {
-    setSchedules(schedules.filter(schedule => schedule.id !== id));
-  };
-
-  const updateSchedule = (id: number, field: keyof Schedule, value: string) => {
-    setSchedules(schedules.map(schedule => 
-      schedule.id === id ? { ...schedule, [field]: value } : schedule
-    ));
-  };
 
   const saveSchedules = () => {
     toast({
       title: "Schedules Saved",
-      description: `${schedules.length} schedule(s) configured`,
+      description: `${schedules.length} schedule(s) saved locally`,
     });
   };
 
@@ -60,20 +35,21 @@ export const Scheduler = () => {
                 <Label className="text-xs text-muted-foreground">Task</Label>
                 <Select
                   value={schedule.task}
-                  onValueChange={(value) => updateSchedule(schedule.id, "task", value)}
+                  onValueChange={(value) =>
+                    updateSchedule(schedule.id, "task", value as ScheduledTask)
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="cleaning">Cleaning Routine</SelectItem>
-                    <SelectItem value="patrol">Patrol Mode</SelectItem>
-                    <SelectItem value="charging">Return to Charge</SelectItem>
+                    <SelectItem value="home">Go to Home Position</SelectItem>
+                    <SelectItem value="retract">Retract Arm</SelectItem>
                     <SelectItem value="custom">Custom Sequence</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div className="w-32 space-y-2">
                 <Label className="text-xs text-muted-foreground">Time</Label>
                 <Input
@@ -87,7 +63,9 @@ export const Scheduler = () => {
                 <Label className="text-xs text-muted-foreground">Frequency</Label>
                 <Select
                   value={schedule.frequency}
-                  onValueChange={(value) => updateSchedule(schedule.id, "frequency", value)}
+                  onValueChange={(value) =>
+                    updateSchedule(schedule.id, "frequency", value as ScheduleFrequency)
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -100,7 +78,7 @@ export const Scheduler = () => {
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <Button
                 variant="ghost"
                 size="icon"
@@ -114,19 +92,12 @@ export const Scheduler = () => {
         </div>
 
         <div className="flex gap-2 pt-2">
-          <Button
-            variant="outline"
-            className="flex-1"
-            onClick={addSchedule}
-          >
+          <Button variant="outline" className="flex-1" onClick={addSchedule}>
             <Plus className="h-4 w-4 mr-2" />
             Add Schedule
           </Button>
           {schedules.length > 0 && (
-            <Button
-              className="flex-1"
-              onClick={saveSchedules}
-            >
+            <Button className="flex-1" onClick={saveSchedules}>
               Save Schedules
             </Button>
           )}

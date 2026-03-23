@@ -2,7 +2,7 @@ export type RobotConnectionStatus = "connected" | "disconnected" | "connecting";
 
 export type RobotOperationalStatus = "active" | "idle" | "paused" | "stopped" | "error";
 
-export type ScheduledTask = "cleaning" | "patrol" | "charging" | "custom";
+export type ScheduledTask = "home" | "retract" | "custom";
 
 export type ScheduleFrequency = "daily" | "weekdays" | "weekends" | "once";
 
@@ -13,21 +13,27 @@ export interface RobotStatus {
   currentTask: string;
 }
 
+// Matches backend routes/sequences.py TaskAction enum exactly
 export type RobotCommand =
-  | "move-forward"
-  | "move-backward"
-  | "turn-left"
-  | "turn-right"
+  | "move_forward"
+  | "move_backward"
+  | "turn_left"
+  | "turn_right"
+  | "move_up"
+  | "move_down"
+  | "go_home"
+  | "gripper_open"
+  | "gripper_close"
   | "wait";
 
 export interface Task {
-  id: number;
+  id: string;           // crypto.randomUUID()
   action: RobotCommand;
-  duration: string;
+  duration: number;     // seconds (number, not string)
 }
 
 export interface Schedule {
-  id: number;
+  id: string;           // crypto.randomUUID()
   time: string;
   task: ScheduledTask;
   frequency: ScheduleFrequency;

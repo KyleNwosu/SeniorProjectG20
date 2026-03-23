@@ -4,39 +4,37 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Trash2 } from "lucide-react";
-import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useMutation } from "@tanstack/react-query";
+import { useTaskStore } from "@/store/useTaskStore";
+import { executeSequence } from "@/services/robotApi";
+import type { RobotCommand } from "@/types";
 
-interface Task {
-  id: number;
-  action: string;
-  duration: string;
-}
+const ACTION_LABELS: Record<RobotCommand, string> = {
+  move_forward:  "Move Forward",
+  move_backward: "Move Backward",
+  turn_left:     "Turn Left",
+  turn_right:    "Turn Right",
+  move_up:       "Move Up",
+  move_down:     "Move Down",
+  go_home:       "Go Home",
+  gripper_open:  "Open Gripper",
+  gripper_close: "Close Gripper",
+  wait:          "Wait",
+};
 
 export const TaskBuilder = () => {
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const { tasks, addTask, removeTask, updateTask } = useTaskStore();
   const { toast } = useToast();
 
-  const addTask = () => {
-    setTasks([...tasks, { id: Date.now(), action: "move-forward", duration: "5" }]);
-  };
-
-  const removeTask = (id: number) => {
-    setTasks(tasks.filter(task => task.id !== id));
-  };
-
-  const updateTask = (id: number, field: keyof Task, value: string) => {
-    setTasks(tasks.map(task => 
-      task.id === id ? { ...task, [field]: value } : task
-    ));
-  };
-
-  const executeSequence = () => {
-    toast({
-      title: "Task Sequence Started",
-      description: `Executing ${tasks.length} tasks`,
-    });
-  };
+  const mutation = useMutation({
+    mutationFn: () =>
+      executeSequence(tasks.map((t) => ({ action: t.action, duration: t.duration }))),
+    onSuccess: () =>
+      toast({ title: "Sequence Complete", description: `${tasks.length} steps executed` }),
+    onError: (error: Error) =>
+      toast({ title: "Sequence Failed", description: error.message, variant: "destructive" }),
+  });
 
   return (
     <Card>
@@ -51,31 +49,32 @@ export const TaskBuilder = () => {
                 <Label className="text-xs text-muted-foreground">Step {index + 1}</Label>
                 <Select
                   value={task.action}
-                  onValueChange={(value) => updateTask(task.id, "action", value)}
+                  onValueChange={(value) => updateTask(task.id, "action", value as RobotCommand)}
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="move-forward">Move Forward</SelectItem>
-                    <SelectItem value="move-backward">Move Backward</SelectItem>
-                    <SelectItem value="turn-left">Turn Left</SelectItem>
-                    <SelectItem value="turn-right">Turn Right</SelectItem>
-                    <SelectItem value="wait">Wait</SelectItem>
+                    {(Object.keys(ACTION_LABELS) as RobotCommand[]).map((cmd) => (
+                      <SelectItem key={cmd} value={cmd}>
+                        {ACTION_LABELS[cmd]}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div className="w-24 space-y-2">
                 <Label className="text-xs text-muted-foreground">Duration (s)</Label>
                 <Input
                   type="number"
                   value={task.duration}
-                  onChange={(e) => updateTask(task.id, "duration", e.target.value)}
-                  min="1"
+                  onChange={(e) => updateTask(task.id, "duration", e.target.valueAsNumber)}
+                  min={1}
+                  max={300}
                 />
               </div>
-              
+
               <Button
                 variant="ghost"
                 size="icon"
@@ -89,20 +88,17 @@ export const TaskBuilder = () => {
         </div>
 
         <div className="flex gap-2 pt-2">
-          <Button
-            variant="outline"
-            className="flex-1"
-            onClick={addTask}
-          >
+          <Button variant="outline" className="flex-1" onClick={addTask}>
             <Plus className="h-4 w-4 mr-2" />
             Add Step
           </Button>
           {tasks.length > 0 && (
             <Button
               className="flex-1"
-              onClick={executeSequence}
+              disabled={mutation.isPending}
+              onClick={() => mutation.mutate()}
             >
-              Execute Sequence
+              {mutation.isPending ? "Running…" : "Execute Sequence"}
             </Button>
           )}
         </div>

@@ -1,0 +1,47 @@
+import os
+from contextlib import asynccontextmanager
+
+from dotenv import load_dotenv
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from robot.session import robot
+from routes.status import router as status_router
+from routes.commands import router as commands_router
+from routes.sequences import router as sequences_router
+from routes.websocket import router as ws_router
+
+load_dotenv()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Connect to the robot on startup
+    try:
+        robot.connect()
+    except Exception as e:
+        print(f"[Startup] Could not connect to robot: {e}")
+        print("[Startup] Server running in offline mode — robot endpoints will return 503")
+    yield
+    # Disconnect cleanly on shutdown
+    robot.disconnect()
+
+
+app = FastAPI(title="RoboControl Bridge", lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(status_router)
+app.include_router(commands_router)
+app.include_router(sequences_router)
+app.include_router(ws_router)
+
+
+@app.get("/health")
+def health():
+    return {"ok": True, "robot_connected": robot.connected}
