@@ -9,19 +9,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useTaskStore } from "@/store/useTaskStore";
 import { executeSequence } from "@/services/robotApi";
 import type { RobotCommand } from "@/types";
-
-const ACTION_LABELS: Record<RobotCommand, string> = {
-  move_forward:  "Move Forward",
-  move_backward: "Move Backward",
-  turn_left:     "Turn Left",
-  turn_right:    "Turn Right",
-  move_up:       "Move Up",
-  move_down:     "Move Down",
-  go_home:       "Go Home",
-  gripper_open:  "Open Gripper",
-  gripper_close: "Close Gripper",
-  wait:          "Wait",
-};
+import { TASK_ACTION_LABELS } from "@/constants/robotCommands";
 
 export const TaskBuilder = () => {
   const { tasks, addTask, removeTask, updateTask } = useTaskStore();
@@ -55,9 +43,9 @@ export const TaskBuilder = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {(Object.keys(ACTION_LABELS) as RobotCommand[]).map((cmd) => (
+                    {(Object.keys(TASK_ACTION_LABELS) as RobotCommand[]).map((cmd) => (
                       <SelectItem key={cmd} value={cmd}>
-                        {ACTION_LABELS[cmd]}
+                        {TASK_ACTION_LABELS[cmd]}
                       </SelectItem>
                     ))}
                   </SelectContent>

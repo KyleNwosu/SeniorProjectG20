@@ -4,40 +4,12 @@ import {
   ArrowUp, ArrowDown, ArrowLeft, ArrowRight,
   Square, Play, Pause, Home, ChevronUp, ChevronDown,
 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { useRobotStore } from "@/store/useRobotStore";
-import { useMutation } from "@tanstack/react-query";
-import { sendCommand } from "@/services/robotApi";
-import type { CommandType, RobotOperationalStatus } from "@/types";
+import { useRobotCommandDispatcher } from "@/hooks/useRobotCommandDispatcher";
+import { CONTROL_COMMANDS } from "@/constants/robotCommands";
 
 export const ControlPanel = () => {
-  const { toast } = useToast();
-  const { setStatus, setCurrentTask } = useRobotStore();
-
-  const mutation = useMutation({
-    mutationFn: (type: CommandType) => sendCommand(type),
-    onError: (error: Error) => {
-      toast({
-        title: "Command Failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const handleControl = (
-    type: CommandType,
-    label: string,
-    status: RobotOperationalStatus = "active",
-  ) => {
-    // Optimistic store update so RobotStatus reflects the action immediately
-    setStatus(status);
-    setCurrentTask(label);
-    mutation.mutate(type);
-    toast({ title: "Command Sent", description: label });
-  };
-
-  const disabled = mutation.isPending;
+  const { dispatchCommand, isSending } = useRobotCommandDispatcher();
+  const disabled = isSending;
 
   return (
     <Card>
@@ -49,27 +21,27 @@ export const ControlPanel = () => {
         {/* Cartesian XY + rotation */}
         <div className="flex flex-col items-center gap-2">
           <Button variant="outline" size="icon" disabled={disabled} className="w-12 h-12"
-            onClick={() => handleControl("move_forward", "Moving Forward")}>
+            onClick={() => dispatchCommand(CONTROL_COMMANDS.moveForward)}>
             <ArrowUp className="h-5 w-5" />
           </Button>
 
           <div className="flex gap-2">
             <Button variant="outline" size="icon" disabled={disabled} className="w-12 h-12"
-              onClick={() => handleControl("rotate_left", "Rotating Left")}>
+              onClick={() => dispatchCommand(CONTROL_COMMANDS.rotateLeft)}>
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <Button variant="outline" size="icon" disabled={disabled} className="w-12 h-12"
-              onClick={() => handleControl("stop", "Stopped", "stopped")}>
+              onClick={() => dispatchCommand(CONTROL_COMMANDS.stop)}>
               <Square className="h-5 w-5" />
             </Button>
             <Button variant="outline" size="icon" disabled={disabled} className="w-12 h-12"
-              onClick={() => handleControl("rotate_right", "Rotating Right")}>
+              onClick={() => dispatchCommand(CONTROL_COMMANDS.rotateRight)}>
               <ArrowRight className="h-5 w-5" />
             </Button>
           </div>
 
           <Button variant="outline" size="icon" disabled={disabled} className="w-12 h-12"
-            onClick={() => handleControl("move_backward", "Moving Backward")}>
+            onClick={() => dispatchCommand(CONTROL_COMMANDS.moveBackward)}>
             <ArrowDown className="h-5 w-5" />
           </Button>
         </div>
@@ -77,11 +49,11 @@ export const ControlPanel = () => {
         {/* Z axis */}
         <div className="flex justify-center gap-2">
           <Button variant="outline" size="sm" disabled={disabled} className="flex-1"
-            onClick={() => handleControl("move_up", "Moving Up")}>
+            onClick={() => dispatchCommand(CONTROL_COMMANDS.moveUp)}>
             <ChevronUp className="h-4 w-4 mr-1" /> Up
           </Button>
           <Button variant="outline" size="sm" disabled={disabled} className="flex-1"
-            onClick={() => handleControl("move_down", "Moving Down")}>
+            onClick={() => dispatchCommand(CONTROL_COMMANDS.moveDown)}>
             <ChevronDown className="h-4 w-4 mr-1" /> Down
           </Button>
         </div>
@@ -89,15 +61,15 @@ export const ControlPanel = () => {
         {/* Gripper + Home */}
         <div className="flex gap-2 pt-4 border-t">
           <Button className="flex-1" disabled={disabled}
-            onClick={() => handleControl("go_home", "Going Home", "active")}>
+            onClick={() => dispatchCommand(CONTROL_COMMANDS.goHome)}>
             <Home className="h-4 w-4 mr-2" /> Home
           </Button>
           <Button variant="secondary" className="flex-1" disabled={disabled}
-            onClick={() => handleControl("gripper_open", "Gripper Open")}>
+            onClick={() => dispatchCommand(CONTROL_COMMANDS.gripperOpen)}>
             <Play className="h-4 w-4 mr-2" /> Open
           </Button>
           <Button variant="secondary" className="flex-1" disabled={disabled}
-            onClick={() => handleControl("gripper_close", "Gripper Close")}>
+            onClick={() => dispatchCommand(CONTROL_COMMANDS.gripperClose)}>
             <Pause className="h-4 w-4 mr-2" /> Close
           </Button>
         </div>
