@@ -4,9 +4,11 @@ import { TaskBuilder } from "@/components/TaskBuilder";
 import { Scheduler } from "@/components/Scheduler";
 import { Bot } from "lucide-react";
 import { useRobotTelemetry } from "@/hooks/useRobotTelemetry";
+import { useRosConnection } from "@/hooks/useRosConnection";
 
 const Index = () => {
   useRobotTelemetry();
+  useRosConnection();
 
   return (
     <div className="min-h-screen bg-background">

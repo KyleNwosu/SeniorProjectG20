@@ -19,7 +19,7 @@ from dotenv import load_dotenv
 
 from kortex_api.autogen.client_stubs.BaseClientRpc import BaseClient
 from kortex_api.autogen.client_stubs.BaseCyclicClientRpc import BaseCyclicClient
-from kortex_api.autogen.messages import Session_pb2
+from kortex_api.autogen.messages import Session_pb2, Base_pb2
 from kortex_api.RouterClient import RouterClient
 from kortex_api.SessionManager import SessionManager
 from kortex_api.TCPTransport import TCPTransport
@@ -69,6 +69,11 @@ class RobotSession:
 
             self.base = BaseClient(self.router)
             self.base_cyclic = BaseCyclicClient(self.router)
+
+            # Twist commands require high-level (single-level) servoing mode
+            servoing_mode = Base_pb2.ServoingModeInformation()
+            servoing_mode.servoing_mode = Base_pb2.SINGLE_LEVEL_SERVOING
+            self.base.SetServoingMode(servoing_mode)
 
             self.connected = True
             print(f"[Robot] Connected to {ROBOT_IP}:{ROBOT_PORT}")
