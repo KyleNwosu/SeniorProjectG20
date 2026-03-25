@@ -68,9 +68,12 @@ async def send_command(body: CommandRequest):
             await loop.run_in_executor(None, cmd.gripper_command, 1.0)
 
         elif body.type in _TWIST_MAP:
-            # Scale direction unit vector by requested speed
             unit = _TWIST_MAP[body.type]
-            kwargs = {k: v * body.speed for k, v in unit.items()}
+            # Angular axes are in deg/s — needs a much larger scale than linear (m/s)
+            kwargs = {
+                k: v * (body.speed * 300 if k.startswith("angular") else body.speed)
+                for k, v in unit.items()
+            }
             await loop.run_in_executor(None, lambda: cmd.send_twist(**kwargs))
 
         else:
