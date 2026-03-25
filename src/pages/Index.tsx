@@ -1,13 +1,14 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { RobotPanels } from "@/components/RobotPanels";
+import { RobotStatus } from "@/components/RobotStatus";
+import { ControlPanel } from "@/components/ControlPanel";
 import { TaskBuilder } from "@/components/TaskBuilder";
 import { Scheduler } from "@/components/Scheduler";
 import { Bot } from "lucide-react";
-import { useRobotTelemetry } from "@/hooks/useRobotTelemetry";
+import { useRobotSocket } from "@/hooks/useRobotSocket";
 import { useRosConnection } from "@/hooks/useRosConnection";
 
 const Index = () => {
-  useRobotTelemetry();
+  useRobotSocket();
   useRosConnection();
 
   return (
@@ -34,11 +35,19 @@ const Index = () => {
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
-            <RobotPanels layout="dashboard" />
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              <RobotStatus />
+              <div className="md:col-span-2 lg:col-span-2">
+                <ControlPanel />
+              </div>
+            </div>
           </TabsContent>
 
           <TabsContent value="control" className="space-y-6">
-            <RobotPanels layout="control" />
+            <div className="grid gap-6 md:grid-cols-2">
+              <RobotStatus />
+              <ControlPanel />
+            </div>
           </TabsContent>
 
           <TabsContent value="tasks" className="space-y-6">

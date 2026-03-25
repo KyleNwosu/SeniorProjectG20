@@ -4,11 +4,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Clock, Plus, Trash2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { useScheduleStore } from "@/store/useScheduleStore";
 import type { ScheduledTask, ScheduleFrequency } from "@/types";
 
 export const Scheduler = () => {
   const { schedules, addSchedule, removeSchedule, updateSchedule } = useScheduleStore();
+  const { toast } = useToast();
+
+  const saveSchedules = () => {
+    toast({
+      title: "Schedules Saved",
+      description: `${schedules.length} schedule(s) saved locally`,
+    });
+  };
 
   return (
     <Card>
@@ -87,11 +96,12 @@ export const Scheduler = () => {
             <Plus className="h-4 w-4 mr-2" />
             Add Schedule
           </Button>
+          {schedules.length > 0 && (
+            <Button className="flex-1" onClick={saveSchedules}>
+              Save Schedules
+            </Button>
+          )}
         </div>
-        <p className="text-xs text-muted-foreground pt-2">
-          Schedules persist automatically in this browser (local storage). No separate save step is
-          required.
-        </p>
       </CardContent>
     </Card>
   );
