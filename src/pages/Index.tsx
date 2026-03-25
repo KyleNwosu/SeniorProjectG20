@@ -1,13 +1,12 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { RobotStatus } from "@/components/RobotStatus";
-import { ControlPanel } from "@/components/ControlPanel";
+import { RobotPanels } from "@/components/RobotPanels";
 import { TaskBuilder } from "@/components/TaskBuilder";
 import { Scheduler } from "@/components/Scheduler";
 import { Bot } from "lucide-react";
-import { useRobotSocket } from "@/hooks/useRobotSocket";
+import { useRobotTelemetry } from "@/hooks/useRobotTelemetry";
 
 const Index = () => {
-  useRobotSocket();
+  useRobotTelemetry();
 
   return (
     <div className="min-h-screen bg-background">
@@ -33,19 +32,11 @@ const Index = () => {
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              <RobotStatus />
-              <div className="md:col-span-2 lg:col-span-2">
-                <ControlPanel />
-              </div>
-            </div>
+            <RobotPanels layout="dashboard" />
           </TabsContent>
 
           <TabsContent value="control" className="space-y-6">
-            <div className="grid gap-6 md:grid-cols-2">
-              <RobotStatus />
-              <ControlPanel />
-            </div>
+            <RobotPanels layout="control" />
           </TabsContent>
 
           <TabsContent value="tasks" className="space-y-6">
