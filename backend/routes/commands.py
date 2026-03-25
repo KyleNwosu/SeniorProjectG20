@@ -13,12 +13,14 @@ router = APIRouter()
 class CommandType(str, Enum):
     MOVE_FORWARD  = "move_forward"
     MOVE_BACKWARD = "move_backward"
-    MOVE_LEFT     = "move_left"
-    MOVE_RIGHT    = "move_right"
     MOVE_UP       = "move_up"
     MOVE_DOWN     = "move_down"
     ROTATE_LEFT   = "rotate_left"
     ROTATE_RIGHT  = "rotate_right"
+    TILT_UP       = "tilt_up"
+    TILT_DOWN     = "tilt_down"
+    ROLL_LEFT     = "roll_left"
+    ROLL_RIGHT    = "roll_right"
     STOP          = "stop"
     GO_HOME       = "go_home"
     GRIPPER_OPEN  = "gripper_open"
@@ -30,16 +32,18 @@ class CommandRequest(BaseModel):
     speed: float = Field(default=0.05, ge=0.0, le=0.5)  # m/s, capped for safety
 
 
-# Maps command type to twist kwargs
+# Maps command type to twist kwargs (unit vectors scaled by speed at dispatch)
 _TWIST_MAP = {
     CommandType.MOVE_FORWARD:  dict(linear_x=1.0),
     CommandType.MOVE_BACKWARD: dict(linear_x=-1.0),
-    CommandType.MOVE_LEFT:     dict(linear_y=1.0),
-    CommandType.MOVE_RIGHT:    dict(linear_y=-1.0),
     CommandType.MOVE_UP:       dict(linear_z=1.0),
     CommandType.MOVE_DOWN:     dict(linear_z=-1.0),
     CommandType.ROTATE_LEFT:   dict(angular_z=1.0),
     CommandType.ROTATE_RIGHT:  dict(angular_z=-1.0),
+    CommandType.TILT_UP:       dict(angular_y=1.0),
+    CommandType.TILT_DOWN:     dict(angular_y=-1.0),
+    CommandType.ROLL_LEFT:     dict(angular_x=1.0),
+    CommandType.ROLL_RIGHT:    dict(angular_x=-1.0),
 }
 
 
