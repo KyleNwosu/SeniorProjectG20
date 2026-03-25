@@ -20,14 +20,18 @@ export const TASK_ACTION_LABELS: Record<RobotCommand, string> = {
 };
 
 export const CONTROL_COMMANDS = {
-  moveForward: { type: "move_forward", label: "Moving Forward" },
-  rotateLeft: { type: "rotate_left", label: "Rotating Left" },
-  stop: { type: "stop", label: "Stopped", status: "stopped" },
-  rotateRight: { type: "rotate_right", label: "Rotating Right" },
+  moveForward:  { type: "move_forward",  label: "Moving Forward"  },
   moveBackward: { type: "move_backward", label: "Moving Backward" },
-  moveUp: { type: "move_up", label: "Moving Up" },
-  moveDown: { type: "move_down", label: "Moving Down" },
-  goHome: { type: "go_home", label: "Going Home", status: "active" },
-  gripperOpen: { type: "gripper_open", label: "Gripper Open" },
-  gripperClose: { type: "gripper_close", label: "Gripper Close" },
+  moveUp:       { type: "move_up",       label: "Moving Up"       },
+  moveDown:     { type: "move_down",     label: "Moving Down"     },
+  rotateLeft:   { type: "rotate_left",   label: "Rotating Left"   },
+  rotateRight:  { type: "rotate_right",  label: "Rotating Right"  },
+  tiltUp:       { type: "tilt_up",       label: "Tilting Up"      },
+  tiltDown:     { type: "tilt_down",     label: "Tilting Down"    },
+  rollLeft:     { type: "roll_left",     label: "Rolling Left"    },
+  rollRight:    { type: "roll_right",    label: "Rolling Right"   },
+  stop:         { type: "stop",          label: "Stopped", status: "stopped" },
+  goHome:       { type: "go_home",       label: "Going Home", status: "active" },
+  gripperOpen:  { type: "gripper_open",  label: "Gripper Open"    },
+  gripperClose: { type: "gripper_close", label: "Gripper Close"   },
 } as const satisfies Record<string, ControlCommandConfig>;
