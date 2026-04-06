@@ -19,6 +19,7 @@ export const useRobotStore = create<RobotStore>()((set) => ({
     battery: 0,
     connection: "disconnected",
     currentTask: "",
+    joints: [],
   },
   updateFromFrame: (frame) =>
     set((state) => ({ robotStatus: { ...state.robotStatus, ...frame } })),

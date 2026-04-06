@@ -28,6 +28,7 @@ export interface RobotStatus {
   battery: number;
   connection: RobotConnectionStatus;
   currentTask: string;
+  joints: number[];  // degrees, index 0–5 (base → wrist)
 }
 
 // Matches backend routes/sequences.py TaskAction enum exactly
