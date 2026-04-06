@@ -7,16 +7,20 @@ export interface ControlCommandConfig {
 }
 
 export const TASK_ACTION_LABELS: Record<RobotCommand, string> = {
-  move_forward: "Move Forward",
+  move_forward:  "Move Forward",
   move_backward: "Move Backward",
-  turn_left: "Turn Left",
-  turn_right: "Turn Right",
-  move_up: "Move Up",
-  move_down: "Move Down",
-  go_home: "Go Home",
-  gripper_open: "Open Gripper",
+  move_up:       "Move Up",
+  move_down:     "Move Down",
+  rotate_left:   "Rotate Left (Base)",
+  rotate_right:  "Rotate Right (Base)",
+  tilt_up:       "Tilt Up (Wrist)",
+  tilt_down:     "Tilt Down (Wrist)",
+  roll_left:     "Roll Left (Wrist)",
+  roll_right:    "Roll Right (Wrist)",
+  go_home:       "Go Home",
+  gripper_open:  "Open Gripper",
   gripper_close: "Close Gripper",
-  wait: "Wait",
+  wait:          "Wait",
 };
 
 export const CONTROL_COMMANDS = {

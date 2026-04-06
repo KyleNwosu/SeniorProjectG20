@@ -64,16 +64,20 @@ def gripper_command(value: float):
 
 # ── Sequence execution ────────────────────────────────────────────────────────
 
-SPEED = 0.05   # m/s for linear moves
+SPEED         = 0.05   # m/s for linear moves
+ANGULAR_SPEED = 15.0   # deg/s for rotational moves
+
 DURATION_TO_TWIST_MAP = {
-    # Each action runs as a twist for `duration` seconds then stops.
-    # We block with a simple sleep between steps.
     "move_forward":  dict(linear_x=SPEED),
     "move_backward": dict(linear_x=-SPEED),
-    "turn_left":     dict(angular_z=15.0),   # deg/s
-    "turn_right":    dict(angular_z=-15.0),
     "move_up":       dict(linear_z=SPEED),
     "move_down":     dict(linear_z=-SPEED),
+    "rotate_left":   dict(angular_z=ANGULAR_SPEED),
+    "rotate_right":  dict(angular_z=-ANGULAR_SPEED),
+    "tilt_up":       dict(angular_y=ANGULAR_SPEED),
+    "tilt_down":     dict(angular_y=-ANGULAR_SPEED),
+    "roll_left":     dict(angular_x=ANGULAR_SPEED),
+    "roll_right":    dict(angular_x=-ANGULAR_SPEED),
 }
 
 
