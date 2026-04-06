@@ -44,14 +44,16 @@ class ConnectionManager:
             if robot.connected:
                 try:
                     arm_state = await loop.run_in_executor(None, robot.base.GetArmState)
+                    feedback  = await loop.run_in_executor(None, robot.base_cyclic.RefreshFeedback)
                     raw_state = arm_state.active_state
-                    status = _ARM_STATE_MAP.get(raw_state, "idle")
+                    status    = _ARM_STATE_MAP.get(raw_state, "idle")
 
                     payload = {
                         "status": status,
                         "battery": 100,
                         "connection": "connected",
                         "currentTask": "Idle" if status == "idle" else "Running",
+                        "joints": [round(a.position, 2) for a in feedback.actuators],
                     }
                 except Exception as e:
                     payload = {
@@ -59,6 +61,7 @@ class ConnectionManager:
                         "battery": 0,
                         "connection": "disconnected",
                         "currentTask": str(e),
+                        "joints": [],
                     }
             else:
                 payload = {
@@ -66,6 +69,7 @@ class ConnectionManager:
                     "battery": 0,
                     "connection": "disconnected",
                     "currentTask": "Idle",
+                    "joints": [],
                 }
 
             await self.broadcast(payload)
