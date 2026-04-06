@@ -1,24 +1,58 @@
+import { useRef, useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
-  ArrowUp, ArrowDown, ArrowLeft, ArrowRight,
+  ArrowUp, ArrowDown,
   RotateCcw, RotateCw, ChevronUp, ChevronDown,
   Home, Square,
 } from "lucide-react";
 import { useRobotCommandDispatcher } from "@/hooks/useRobotCommandDispatcher";
 import { CONTROL_COMMANDS } from "@/constants/robotCommands";
+import type { ControlCommandConfig } from "@/constants/robotCommands";
+import type { CommandType } from "@/types";
 
-const IconBtn = ({
-  onClick, disabled, children, label,
+/** Translation + rotation: move while pointer is down, stop on release (matches twist-until-stop backend). */
+const HoldMotionBtn = ({
+  config,
+  disabled,
+  children,
+  label,
+  onHoldStart,
+  onHoldEnd,
 }: {
-  onClick: () => void;
+  config: ControlCommandConfig;
   disabled: boolean;
   children: React.ReactNode;
   label: string;
+  onHoldStart: (c: ControlCommandConfig) => void;
+  onHoldEnd: () => void;
 }) => (
   <div className="flex flex-col items-center gap-1">
-    <Button variant="outline" size="icon" disabled={disabled}
-      className="w-12 h-12" onClick={onClick}>
+    <Button
+      type="button"
+      variant="outline"
+      size="icon"
+      disabled={disabled}
+      className="w-12 h-12 touch-none select-none"
+      onPointerDown={(e) => {
+        if (disabled) return;
+        e.preventDefault();
+        e.currentTarget.setPointerCapture(e.pointerId);
+        onHoldStart(config);
+      }}
+      onPointerUp={(e) => {
+        if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+          e.currentTarget.releasePointerCapture(e.pointerId);
+        }
+        onHoldEnd();
+      }}
+      onPointerCancel={(e) => {
+        if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+          e.currentTarget.releasePointerCapture(e.pointerId);
+        }
+        onHoldEnd();
+      }}
+    >
       {children}
     </Button>
     <span className="text-xs text-muted-foreground">{label}</span>
@@ -27,9 +61,45 @@ const IconBtn = ({
 
 export const ControlPanel = () => {
   const { dispatchCommand, isSending } = useRobotCommandDispatcher();
-  const d = isSending;
-  const cmd = (c: typeof CONTROL_COMMANDS[keyof typeof CONTROL_COMMANDS]) =>
-    () => dispatchCommand(c);
+  const heldRef = useRef<CommandType | null>(null);
+  const [heldCommand, setHeldCommand] = useState<CommandType | null>(null);
+
+  const endHold = useCallback(() => {
+    if (heldRef.current === null) return;
+    heldRef.current = null;
+    setHeldCommand(null);
+    dispatchCommand({ ...CONTROL_COMMANDS.stop, silent: true });
+  }, [dispatchCommand]);
+
+  const beginHold = useCallback(
+    (c: ControlCommandConfig) => {
+      if (heldRef.current !== null) return;
+      heldRef.current = c.type;
+      setHeldCommand(c.type);
+      dispatchCommand(c);
+    },
+    [dispatchCommand],
+  );
+
+  useEffect(() => {
+    if (heldCommand === null) return;
+    const onBlur = () => endHold();
+    window.addEventListener("blur", onBlur);
+    return () => window.removeEventListener("blur", onBlur);
+  }, [heldCommand, endHold]);
+
+  const holdActive = heldCommand !== null;
+  const cmd = (c: ControlCommandConfig) => () => dispatchCommand(c);
+
+  /** While a move is held, only that control stays active; otherwise block motion while a request is in flight. */
+  const motionDisabled = (type: CommandType) =>
+    (holdActive && heldCommand !== type) || (!holdActive && isSending);
+
+  const dispatchStopClick = () => {
+    heldRef.current = null;
+    setHeldCommand(null);
+    dispatchCommand(CONTROL_COMMANDS.stop);
+  };
 
   return (
     <Card>
@@ -44,18 +114,42 @@ export const ControlPanel = () => {
             Translation
           </p>
           <div className="grid grid-cols-4 gap-2 justify-items-center">
-            <IconBtn disabled={d} onClick={cmd(CONTROL_COMMANDS.moveForward)}  label="Extend">
+            <HoldMotionBtn
+              config={CONTROL_COMMANDS.moveForward}
+              disabled={motionDisabled(CONTROL_COMMANDS.moveForward.type)}
+              label="Extend"
+              onHoldStart={beginHold}
+              onHoldEnd={endHold}
+            >
               <ArrowUp className="h-5 w-5" />
-            </IconBtn>
-            <IconBtn disabled={d} onClick={cmd(CONTROL_COMMANDS.moveBackward)} label="Retract">
+            </HoldMotionBtn>
+            <HoldMotionBtn
+              config={CONTROL_COMMANDS.moveBackward}
+              disabled={motionDisabled(CONTROL_COMMANDS.moveBackward.type)}
+              label="Retract"
+              onHoldStart={beginHold}
+              onHoldEnd={endHold}
+            >
               <ArrowDown className="h-5 w-5" />
-            </IconBtn>
-            <IconBtn disabled={d} onClick={cmd(CONTROL_COMMANDS.moveUp)}       label="Up">
+            </HoldMotionBtn>
+            <HoldMotionBtn
+              config={CONTROL_COMMANDS.moveUp}
+              disabled={motionDisabled(CONTROL_COMMANDS.moveUp.type)}
+              label="Up"
+              onHoldStart={beginHold}
+              onHoldEnd={endHold}
+            >
               <ChevronUp className="h-5 w-5" />
-            </IconBtn>
-            <IconBtn disabled={d} onClick={cmd(CONTROL_COMMANDS.moveDown)}     label="Down">
+            </HoldMotionBtn>
+            <HoldMotionBtn
+              config={CONTROL_COMMANDS.moveDown}
+              disabled={motionDisabled(CONTROL_COMMANDS.moveDown.type)}
+              label="Down"
+              onHoldStart={beginHold}
+              onHoldEnd={endHold}
+            >
               <ChevronDown className="h-5 w-5" />
-            </IconBtn>
+            </HoldMotionBtn>
           </div>
         </div>
 
@@ -70,12 +164,24 @@ export const ControlPanel = () => {
             <div className="flex flex-col items-center gap-1">
               <p className="text-xs text-muted-foreground">Base</p>
               <div className="flex gap-2">
-                <IconBtn disabled={d} onClick={cmd(CONTROL_COMMANDS.rotateLeft)}  label="Left">
+                <HoldMotionBtn
+                  config={CONTROL_COMMANDS.rotateLeft}
+                  disabled={motionDisabled(CONTROL_COMMANDS.rotateLeft.type)}
+                  label="Left"
+                  onHoldStart={beginHold}
+                  onHoldEnd={endHold}
+                >
                   <RotateCcw className="h-5 w-5" />
-                </IconBtn>
-                <IconBtn disabled={d} onClick={cmd(CONTROL_COMMANDS.rotateRight)} label="Right">
+                </HoldMotionBtn>
+                <HoldMotionBtn
+                  config={CONTROL_COMMANDS.rotateRight}
+                  disabled={motionDisabled(CONTROL_COMMANDS.rotateRight.type)}
+                  label="Right"
+                  onHoldStart={beginHold}
+                  onHoldEnd={endHold}
+                >
                   <RotateCw className="h-5 w-5" />
-                </IconBtn>
+                </HoldMotionBtn>
               </div>
             </div>
 
@@ -83,12 +189,24 @@ export const ControlPanel = () => {
             <div className="flex flex-col items-center gap-1">
               <p className="text-xs text-muted-foreground">Tilt</p>
               <div className="flex gap-2">
-                <IconBtn disabled={d} onClick={cmd(CONTROL_COMMANDS.tiltUp)}   label="Up">
+                <HoldMotionBtn
+                  config={CONTROL_COMMANDS.tiltUp}
+                  disabled={motionDisabled(CONTROL_COMMANDS.tiltUp.type)}
+                  label="Up"
+                  onHoldStart={beginHold}
+                  onHoldEnd={endHold}
+                >
                   <ArrowUp className="h-5 w-5" />
-                </IconBtn>
-                <IconBtn disabled={d} onClick={cmd(CONTROL_COMMANDS.tiltDown)} label="Down">
+                </HoldMotionBtn>
+                <HoldMotionBtn
+                  config={CONTROL_COMMANDS.tiltDown}
+                  disabled={motionDisabled(CONTROL_COMMANDS.tiltDown.type)}
+                  label="Down"
+                  onHoldStart={beginHold}
+                  onHoldEnd={endHold}
+                >
                   <ArrowDown className="h-5 w-5" />
-                </IconBtn>
+                </HoldMotionBtn>
               </div>
             </div>
 
@@ -96,12 +214,24 @@ export const ControlPanel = () => {
             <div className="flex flex-col items-center gap-1">
               <p className="text-xs text-muted-foreground">Roll</p>
               <div className="flex gap-2">
-                <IconBtn disabled={d} onClick={cmd(CONTROL_COMMANDS.rollLeft)}  label="Left">
+                <HoldMotionBtn
+                  config={CONTROL_COMMANDS.rollLeft}
+                  disabled={motionDisabled(CONTROL_COMMANDS.rollLeft.type)}
+                  label="Left"
+                  onHoldStart={beginHold}
+                  onHoldEnd={endHold}
+                >
                   <RotateCcw className="h-5 w-5" />
-                </IconBtn>
-                <IconBtn disabled={d} onClick={cmd(CONTROL_COMMANDS.rollRight)} label="Right">
+                </HoldMotionBtn>
+                <HoldMotionBtn
+                  config={CONTROL_COMMANDS.rollRight}
+                  disabled={motionDisabled(CONTROL_COMMANDS.rollRight.type)}
+                  label="Right"
+                  onHoldStart={beginHold}
+                  onHoldEnd={endHold}
+                >
                   <RotateCw className="h-5 w-5" />
-                </IconBtn>
+                </HoldMotionBtn>
               </div>
             </div>
 
@@ -110,19 +240,20 @@ export const ControlPanel = () => {
 
         {/* Row 3: Gripper + Stop + Home */}
         <div className="flex gap-2 pt-4 border-t">
-          <Button className="flex-1" disabled={d}
+          <Button className="flex-1" disabled={isSending || holdActive}
             onClick={cmd(CONTROL_COMMANDS.goHome)}>
             <Home className="h-4 w-4 mr-2" /> Home
           </Button>
-          <Button variant="destructive" className="flex-1" disabled={d}
-            onClick={cmd(CONTROL_COMMANDS.stop)}>
+          <Button variant="destructive" className="flex-1"
+            disabled={!holdActive && isSending}
+            onClick={dispatchStopClick}>
             <Square className="h-4 w-4 mr-2" /> Stop
           </Button>
-          <Button variant="secondary" disabled={d}
+          <Button variant="secondary" disabled={isSending || holdActive}
             onClick={cmd(CONTROL_COMMANDS.gripperOpen)}>
             Open
           </Button>
-          <Button variant="secondary" disabled={d}
+          <Button variant="secondary" disabled={isSending || holdActive}
             onClick={cmd(CONTROL_COMMANDS.gripperClose)}>
             Close
           </Button>
