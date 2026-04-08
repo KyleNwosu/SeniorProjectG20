@@ -49,15 +49,15 @@ def go_home():
 
 def rotate_base(speed: float):
     """
-    Rotate J1 (base joint) using joint-speed control.
-    speed: positive = CCW, negative = CW (deg/s)
+    Rotate around world Z axis (= J1/base joint) by using the BASE reference frame
+    so angular_z is in world space, not end-effector space.
+    speed: deg/s, positive = CCW, negative = CW
     """
-    joint_speeds = Base_pb2.JointSpeeds()
-    joint_speed  = joint_speeds.joint_speeds.add()
-    joint_speed.joint_identifier = 0   # J1 is index 0
-    joint_speed.value             = speed
-    joint_speed.duration          = 0
-    robot.base.SendJointSpeedsCommand(joint_speeds)
+    command = Base_pb2.TwistCommand()
+    command.reference_frame = Base_pb2.CARTESIAN_REFERENCE_FRAME_BASE
+    command.duration = 0
+    command.twist.angular_z = speed
+    robot.base.SendTwistCommand(command)
 
 
 def gripper_command(value: float):
