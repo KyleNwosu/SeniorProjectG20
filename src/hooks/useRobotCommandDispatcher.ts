@@ -2,7 +2,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useRobotStore } from "@/store/useRobotStore";
 import { sendCommand } from "@/services/robotApi";
-import type { CommandType, RobotOperationalStatus } from "@/types";
+import type { CommandType } from "@/types";
 import type { ControlCommandConfig } from "@/constants/robotCommands";
 
 export type DispatchCommandParams = ControlCommandConfig & { silent?: boolean };
@@ -28,7 +28,6 @@ export const useRobotCommandDispatcher = () => {
     status = "active",
     silent = false,
   }: DispatchCommandParams) => {
-    // Optimistic store update keeps RobotStatus aligned with the latest action.
     setStatus(status);
     setCurrentTask(label);
     mutation.mutate(type);
