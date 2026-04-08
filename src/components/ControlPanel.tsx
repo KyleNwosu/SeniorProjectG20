@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
-  ArrowUp, ArrowDown, ArrowLeft, ArrowRight,
+  ArrowUp, ArrowDown,
   RotateCcw, RotateCw, ChevronUp, ChevronDown,
   Home, Square,
 } from "lucide-react";
@@ -59,27 +59,27 @@ export const ControlPanel = () => {
           </div>
         </div>
 
-        {/* Row 2: Rotation — base yaw, wrist pitch, wrist roll */}
+        {/* Row 2: Rotation — base (J1), wrist tilt, wrist roll, wrist Z */}
         <div>
           <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">
             Rotation
           </p>
-          <div className="grid grid-cols-3 gap-4 justify-items-center">
+          <div className="grid grid-cols-4 gap-3 justify-items-center">
 
-            {/* Base rotation */}
+            {/* Base rotation — J1 joint speed */}
             <div className="flex flex-col items-center gap-1">
               <p className="text-xs text-muted-foreground">Base</p>
               <div className="flex gap-2">
-                <IconBtn disabled={d} onClick={cmd(CONTROL_COMMANDS.rotateLeft)}  label="Left">
+                <IconBtn disabled={d} onClick={cmd(CONTROL_COMMANDS.baseRotateLeft)}  label="Left">
                   <RotateCcw className="h-5 w-5" />
                 </IconBtn>
-                <IconBtn disabled={d} onClick={cmd(CONTROL_COMMANDS.rotateRight)} label="Right">
+                <IconBtn disabled={d} onClick={cmd(CONTROL_COMMANDS.baseRotateRight)} label="Right">
                   <RotateCw className="h-5 w-5" />
                 </IconBtn>
               </div>
             </div>
 
-            {/* Wrist pitch */}
+            {/* Wrist tilt (angular_y) */}
             <div className="flex flex-col items-center gap-1">
               <p className="text-xs text-muted-foreground">Tilt</p>
               <div className="flex gap-2">
@@ -92,14 +92,27 @@ export const ControlPanel = () => {
               </div>
             </div>
 
-            {/* Wrist roll */}
+            {/* Wrist roll (angular_x) */}
             <div className="flex flex-col items-center gap-1">
-              <p className="text-xs text-muted-foreground">Roll</p>
+              <p className="text-xs text-muted-foreground">Wrist Roll</p>
               <div className="flex gap-2">
                 <IconBtn disabled={d} onClick={cmd(CONTROL_COMMANDS.rollLeft)}  label="Left">
                   <RotateCcw className="h-5 w-5" />
                 </IconBtn>
                 <IconBtn disabled={d} onClick={cmd(CONTROL_COMMANDS.rollRight)} label="Right">
+                  <RotateCw className="h-5 w-5" />
+                </IconBtn>
+              </div>
+            </div>
+
+            {/* Wrist Z rotation (angular_z) */}
+            <div className="flex flex-col items-center gap-1">
+              <p className="text-xs text-muted-foreground">Wrist Z</p>
+              <div className="flex gap-2">
+                <IconBtn disabled={d} onClick={cmd(CONTROL_COMMANDS.rotateLeft)}  label="Left">
+                  <RotateCcw className="h-5 w-5" />
+                </IconBtn>
+                <IconBtn disabled={d} onClick={cmd(CONTROL_COMMANDS.rotateRight)} label="Right">
                   <RotateCw className="h-5 w-5" />
                 </IconBtn>
               </div>

@@ -12,6 +12,8 @@ export type CommandType =
   | "tilt_down"
   | "roll_left"
   | "roll_right"
+  | "base_rotate_left"
+  | "base_rotate_right"
   | "stop"
   | "go_home"
   | "gripper_open"

@@ -47,6 +47,19 @@ def go_home():
     robot.base.ExecuteActionFromReference(home_handle)
 
 
+def rotate_base(speed: float):
+    """
+    Rotate J1 (base joint) using joint-speed control.
+    speed: positive = CCW, negative = CW (deg/s)
+    """
+    joint_speeds = Base_pb2.JointSpeeds()
+    joint_speed  = joint_speeds.joint_speeds.add()
+    joint_speed.joint_identifier = 0   # J1 is index 0
+    joint_speed.value             = speed
+    joint_speed.duration          = 0
+    robot.base.SendJointSpeedsCommand(joint_speeds)
+
+
 def gripper_command(value: float):
     """
     Open or close the gripper.
