@@ -11,7 +11,6 @@ import { CONTROL_COMMANDS } from "@/constants/robotCommands";
 import type { ControlCommandConfig } from "@/constants/robotCommands";
 import type { CommandType } from "@/types";
 
-/** Translation + rotation: move while pointer is down, stop on release (matches twist-until-stop backend). */
 const HoldMotionBtn = ({
   config,
   disabled,
@@ -89,9 +88,7 @@ export const ControlPanel = () => {
   }, [heldCommand, endHold]);
 
   const holdActive = heldCommand !== null;
-  const cmd = (c: ControlCommandConfig) => () => dispatchCommand(c);
 
-  /** While a move is held, only that control stays active; otherwise block motion while a request is in flight. */
   const motionDisabled = (type: CommandType) =>
     (holdActive && heldCommand !== type) || (!holdActive && isSending);
 
@@ -101,6 +98,8 @@ export const ControlPanel = () => {
     dispatchCommand(CONTROL_COMMANDS.stop);
   };
 
+  const cmd = (c: ControlCommandConfig) => () => dispatchCommand(c);
+
   return (
     <Card>
       <CardHeader>
@@ -108,128 +107,105 @@ export const ControlPanel = () => {
       </CardHeader>
       <CardContent className="space-y-6">
 
-        {/* Row 1: Translation — extend/retract + up/down */}
+        {/* Translation */}
         <div>
           <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">
             Translation
           </p>
           <div className="grid grid-cols-4 gap-2 justify-items-center">
-            <HoldMotionBtn
-              config={CONTROL_COMMANDS.moveForward}
+            <HoldMotionBtn config={CONTROL_COMMANDS.moveForward}
               disabled={motionDisabled(CONTROL_COMMANDS.moveForward.type)}
-              label="Extend"
-              onHoldStart={beginHold}
-              onHoldEnd={endHold}
-            >
+              label="Extend" onHoldStart={beginHold} onHoldEnd={endHold}>
               <ArrowUp className="h-5 w-5" />
             </HoldMotionBtn>
-            <HoldMotionBtn
-              config={CONTROL_COMMANDS.moveBackward}
+            <HoldMotionBtn config={CONTROL_COMMANDS.moveBackward}
               disabled={motionDisabled(CONTROL_COMMANDS.moveBackward.type)}
-              label="Retract"
-              onHoldStart={beginHold}
-              onHoldEnd={endHold}
-            >
+              label="Retract" onHoldStart={beginHold} onHoldEnd={endHold}>
               <ArrowDown className="h-5 w-5" />
             </HoldMotionBtn>
-            <HoldMotionBtn
-              config={CONTROL_COMMANDS.moveUp}
+            <HoldMotionBtn config={CONTROL_COMMANDS.moveUp}
               disabled={motionDisabled(CONTROL_COMMANDS.moveUp.type)}
-              label="Up"
-              onHoldStart={beginHold}
-              onHoldEnd={endHold}
-            >
+              label="Up" onHoldStart={beginHold} onHoldEnd={endHold}>
               <ChevronUp className="h-5 w-5" />
             </HoldMotionBtn>
-            <HoldMotionBtn
-              config={CONTROL_COMMANDS.moveDown}
+            <HoldMotionBtn config={CONTROL_COMMANDS.moveDown}
               disabled={motionDisabled(CONTROL_COMMANDS.moveDown.type)}
-              label="Down"
-              onHoldStart={beginHold}
-              onHoldEnd={endHold}
-            >
+              label="Down" onHoldStart={beginHold} onHoldEnd={endHold}>
               <ChevronDown className="h-5 w-5" />
             </HoldMotionBtn>
           </div>
         </div>
 
-        {/* Row 2: Rotation — base yaw, wrist pitch, wrist roll */}
+        {/* Rotation */}
         <div>
           <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">
             Rotation
           </p>
-          <div className="grid grid-cols-3 gap-4 justify-items-center">
+          <div className="grid grid-cols-4 gap-3 justify-items-center">
 
-            {/* Base rotation */}
+            {/* Base — world Z (J1) */}
             <div className="flex flex-col items-center gap-1">
               <p className="text-xs text-muted-foreground">Base</p>
               <div className="flex gap-2">
-                <HoldMotionBtn
-                  config={CONTROL_COMMANDS.rotateLeft}
-                  disabled={motionDisabled(CONTROL_COMMANDS.rotateLeft.type)}
-                  label="Left"
-                  onHoldStart={beginHold}
-                  onHoldEnd={endHold}
-                >
+                <HoldMotionBtn config={CONTROL_COMMANDS.baseRotateLeft}
+                  disabled={motionDisabled(CONTROL_COMMANDS.baseRotateLeft.type)}
+                  label="Left" onHoldStart={beginHold} onHoldEnd={endHold}>
                   <RotateCcw className="h-5 w-5" />
                 </HoldMotionBtn>
-                <HoldMotionBtn
-                  config={CONTROL_COMMANDS.rotateRight}
-                  disabled={motionDisabled(CONTROL_COMMANDS.rotateRight.type)}
-                  label="Right"
-                  onHoldStart={beginHold}
-                  onHoldEnd={endHold}
-                >
+                <HoldMotionBtn config={CONTROL_COMMANDS.baseRotateRight}
+                  disabled={motionDisabled(CONTROL_COMMANDS.baseRotateRight.type)}
+                  label="Right" onHoldStart={beginHold} onHoldEnd={endHold}>
                   <RotateCw className="h-5 w-5" />
                 </HoldMotionBtn>
               </div>
             </div>
 
-            {/* Wrist pitch */}
+            {/* Wrist tilt (angular_y) */}
             <div className="flex flex-col items-center gap-1">
               <p className="text-xs text-muted-foreground">Tilt</p>
               <div className="flex gap-2">
-                <HoldMotionBtn
-                  config={CONTROL_COMMANDS.tiltUp}
+                <HoldMotionBtn config={CONTROL_COMMANDS.tiltUp}
                   disabled={motionDisabled(CONTROL_COMMANDS.tiltUp.type)}
-                  label="Up"
-                  onHoldStart={beginHold}
-                  onHoldEnd={endHold}
-                >
+                  label="Up" onHoldStart={beginHold} onHoldEnd={endHold}>
                   <ArrowUp className="h-5 w-5" />
                 </HoldMotionBtn>
-                <HoldMotionBtn
-                  config={CONTROL_COMMANDS.tiltDown}
+                <HoldMotionBtn config={CONTROL_COMMANDS.tiltDown}
                   disabled={motionDisabled(CONTROL_COMMANDS.tiltDown.type)}
-                  label="Down"
-                  onHoldStart={beginHold}
-                  onHoldEnd={endHold}
-                >
+                  label="Down" onHoldStart={beginHold} onHoldEnd={endHold}>
                   <ArrowDown className="h-5 w-5" />
                 </HoldMotionBtn>
               </div>
             </div>
 
-            {/* Wrist roll */}
+            {/* Wrist roll (angular_x) */}
             <div className="flex flex-col items-center gap-1">
-              <p className="text-xs text-muted-foreground">Roll</p>
+              <p className="text-xs text-muted-foreground">Wrist Roll</p>
               <div className="flex gap-2">
-                <HoldMotionBtn
-                  config={CONTROL_COMMANDS.rollLeft}
+                <HoldMotionBtn config={CONTROL_COMMANDS.rollLeft}
                   disabled={motionDisabled(CONTROL_COMMANDS.rollLeft.type)}
-                  label="Left"
-                  onHoldStart={beginHold}
-                  onHoldEnd={endHold}
-                >
+                  label="Left" onHoldStart={beginHold} onHoldEnd={endHold}>
                   <RotateCcw className="h-5 w-5" />
                 </HoldMotionBtn>
-                <HoldMotionBtn
-                  config={CONTROL_COMMANDS.rollRight}
+                <HoldMotionBtn config={CONTROL_COMMANDS.rollRight}
                   disabled={motionDisabled(CONTROL_COMMANDS.rollRight.type)}
-                  label="Right"
-                  onHoldStart={beginHold}
-                  onHoldEnd={endHold}
-                >
+                  label="Right" onHoldStart={beginHold} onHoldEnd={endHold}>
+                  <RotateCw className="h-5 w-5" />
+                </HoldMotionBtn>
+              </div>
+            </div>
+
+            {/* Wrist Z (angular_z end-effector) */}
+            <div className="flex flex-col items-center gap-1">
+              <p className="text-xs text-muted-foreground">Wrist Z</p>
+              <div className="flex gap-2">
+                <HoldMotionBtn config={CONTROL_COMMANDS.rotateLeft}
+                  disabled={motionDisabled(CONTROL_COMMANDS.rotateLeft.type)}
+                  label="Left" onHoldStart={beginHold} onHoldEnd={endHold}>
+                  <RotateCcw className="h-5 w-5" />
+                </HoldMotionBtn>
+                <HoldMotionBtn config={CONTROL_COMMANDS.rotateRight}
+                  disabled={motionDisabled(CONTROL_COMMANDS.rotateRight.type)}
+                  label="Right" onHoldStart={beginHold} onHoldEnd={endHold}>
                   <RotateCw className="h-5 w-5" />
                 </HoldMotionBtn>
               </div>
@@ -238,7 +214,7 @@ export const ControlPanel = () => {
           </div>
         </div>
 
-        {/* Row 3: Gripper + Stop + Home */}
+        {/* Actions */}
         <div className="flex gap-2 pt-4 border-t">
           <Button className="flex-1" disabled={isSending || holdActive}
             onClick={cmd(CONTROL_COMMANDS.goHome)}>

@@ -63,6 +63,19 @@ def go_home():
     robot.base.ExecuteActionFromReference(home_handle)
 
 
+def rotate_base(speed: float):
+    """
+    Rotate around world Z axis (= J1/base joint) by using the BASE reference frame
+    so angular_z is in world space, not end-effector space.
+    speed: deg/s, positive = CCW, negative = CW
+    """
+    command = Base_pb2.TwistCommand()
+    command.reference_frame = Base_pb2.CARTESIAN_REFERENCE_FRAME_BASE
+    command.duration = 0
+    command.twist.angular_z = speed
+    robot.base.SendTwistCommand(command)
+
+
 def gripper_command(value: float):
     """
     Open or close the gripper.

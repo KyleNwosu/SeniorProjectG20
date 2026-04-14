@@ -19,8 +19,10 @@ class CommandType(str, Enum):
     ROTATE_RIGHT  = "rotate_right"
     TILT_UP       = "tilt_up"
     TILT_DOWN     = "tilt_down"
-    ROLL_LEFT     = "roll_left"
-    ROLL_RIGHT    = "roll_right"
+    ROLL_LEFT          = "roll_left"
+    ROLL_RIGHT         = "roll_right"
+    BASE_ROTATE_LEFT   = "base_rotate_left"
+    BASE_ROTATE_RIGHT  = "base_rotate_right"
     STOP          = "stop"
     GO_HOME       = "go_home"
     GRIPPER_OPEN  = "gripper_open"
@@ -66,6 +68,14 @@ async def send_command(body: CommandRequest):
 
         elif body.type == CommandType.GRIPPER_CLOSE:
             await loop.run_in_executor(None, cmd.gripper_command, 1.0)
+
+        elif body.type == CommandType.BASE_ROTATE_LEFT:
+            speed = body.speed * 300  # scale to deg/s like other angular commands
+            await loop.run_in_executor(None, lambda: cmd.rotate_base(speed))
+
+        elif body.type == CommandType.BASE_ROTATE_RIGHT:
+            speed = body.speed * 300
+            await loop.run_in_executor(None, lambda: cmd.rotate_base(-speed))
 
         elif body.type in _TWIST_MAP:
             unit = _TWIST_MAP[body.type]
