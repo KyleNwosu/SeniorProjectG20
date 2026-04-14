@@ -1,7 +1,6 @@
 import { RobotStatus } from "@/components/RobotStatus";
 import { ControlPanel } from "@/components/ControlPanel";
 import { JointStatesPanel } from "@/components/JointStatesPanel";
-import { CameraPanel } from "@/components/CameraPanel";
 
 export type RobotPanelsLayout = "dashboard" | "control";
 
@@ -20,9 +19,6 @@ export const RobotPanels = ({ layout }: RobotPanelsProps) => {
         <div className="md:col-span-1 lg:col-span-2">
           <ControlPanel />
         </div>
-        <div className="md:col-span-2 lg:col-span-3">
-          <CameraPanel />
-        </div>
       </div>
     );
   }
@@ -32,7 +28,6 @@ export const RobotPanels = ({ layout }: RobotPanelsProps) => {
       <div className="flex flex-col gap-6">
         <RobotStatus />
         <JointStatesPanel />
-        <CameraPanel />
       </div>
       <ControlPanel />
     </div>

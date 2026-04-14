@@ -2,7 +2,6 @@ import os
 import threading
 import collections
 import collections.abc
-from typing import Any
 
 # Python 3.10+ removed collections.MutableMapping aliases.
 # kortex_api ships with protobuf 3.5.1 which still uses them.
@@ -18,27 +17,12 @@ for _name in (
 
 from dotenv import load_dotenv
 
-KORTEX_AVAILABLE = True
-KORTEX_IMPORT_ERROR: Exception | None = None
-
-try:
-    from kortex_api.autogen.client_stubs.BaseClientRpc import BaseClient
-    from kortex_api.autogen.client_stubs.BaseCyclicClientRpc import BaseCyclicClient
-    from kortex_api.autogen.messages import Session_pb2, Base_pb2
-    from kortex_api.RouterClient import RouterClient
-    from kortex_api.SessionManager import SessionManager
-    from kortex_api.TCPTransport import TCPTransport
-except Exception as exc:
-    # Allow camera/status endpoints to start even when Kortex SDK isn't installable.
-    KORTEX_AVAILABLE = False
-    KORTEX_IMPORT_ERROR = exc
-    BaseClient = Any
-    BaseCyclicClient = Any
-    Session_pb2 = Any
-    Base_pb2 = Any
-    RouterClient = Any
-    SessionManager = Any
-    TCPTransport = Any
+from kortex_api.autogen.client_stubs.BaseClientRpc import BaseClient
+from kortex_api.autogen.client_stubs.BaseCyclicClientRpc import BaseCyclicClient
+from kortex_api.autogen.messages import Session_pb2, Base_pb2
+from kortex_api.RouterClient import RouterClient
+from kortex_api.SessionManager import SessionManager
+from kortex_api.TCPTransport import TCPTransport
 
 load_dotenv()
 
@@ -68,11 +52,6 @@ class RobotSession:
         with self._lock:
             if self.connected:
                 return
-            if not KORTEX_AVAILABLE:
-                raise RuntimeError(
-                    "Kortex SDK unavailable. Install robot extras (`pip install -r backend/requirements-robot.txt`) "
-                    f"or run camera-only mode. Import error: {KORTEX_IMPORT_ERROR}"
-                )
 
             self.transport = TCPTransport()
             self.transport.connect(ROBOT_IP, ROBOT_PORT)

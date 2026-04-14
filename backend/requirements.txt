@@ -1,4 +1,4 @@
 fastapi>=0.115.0
 uvicorn[standard]>=0.32.0
 python-dotenv>=1.0.0
-opencv-python>=4.10.0
+kortex-api>=2.6.0

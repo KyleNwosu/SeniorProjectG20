@@ -1,2 +1,0 @@
--r requirements.txt
-kortex-api>=2.6.0
