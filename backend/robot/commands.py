@@ -3,9 +3,22 @@ Low-level helpers that translate frontend command types into Kortex API calls.
 All functions are synchronous — run them in a thread pool from async routes.
 """
 
-from kortex_api.autogen.messages import Base_pb2
-
 from robot.session import robot
+
+_KORTEX_IMPORT_ERROR: Exception | None = None
+try:
+    from kortex_api.autogen.messages import Base_pb2
+except Exception as exc:
+    Base_pb2 = None
+    _KORTEX_IMPORT_ERROR = exc
+
+
+def _require_robot_sdk() -> None:
+    if Base_pb2 is None:
+        raise RuntimeError(
+            "Robot SDK is unavailable (kortex-api not installed). "
+            f"Import error: {_KORTEX_IMPORT_ERROR}"
+        )
 
 
 # ── Direct control ────────────────────────────────────────────────────────────
@@ -13,6 +26,7 @@ from robot.session import robot
 def send_twist(linear_x=0.0, linear_y=0.0, linear_z=0.0,
                angular_x=0.0, angular_y=0.0, angular_z=0.0):
     """Send a Cartesian velocity command. Call with all zeros (or stop()) to halt."""
+    _require_robot_sdk()
     command = Base_pb2.TwistCommand()
     command.reference_frame = Base_pb2.CARTESIAN_REFERENCE_FRAME_MIXED
     command.duration = 0  # 0 = run until next command
@@ -29,11 +43,13 @@ def send_twist(linear_x=0.0, linear_y=0.0, linear_z=0.0,
 
 def stop():
     """Immediately stop all motion."""
+    _require_robot_sdk()
     robot.base.Stop()
 
 
 def go_home():
     """Execute the pre-programmed 'Home' action stored on the robot."""
+    _require_robot_sdk()
     action_type = Base_pb2.RequestedActionType()
     action_type.action_type = Base_pb2.REACH_JOINT_ANGLES
 
@@ -52,6 +68,7 @@ def gripper_command(value: float):
     Open or close the gripper.
     value: 0.0 = fully open, 1.0 = fully closed
     """
+    _require_robot_sdk()
     gripper_command = Base_pb2.GripperCommand()
     gripper_command.mode = Base_pb2.GRIPPER_POSITION
 

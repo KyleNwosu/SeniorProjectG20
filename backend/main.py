@@ -10,6 +10,8 @@ from routes.status import router as status_router
 from routes.commands import router as commands_router
 from routes.sequences import router as sequences_router
 from routes.websocket import router as ws_router
+from routes.camera import router as camera_router
+from routes.camera import camera_service
 
 load_dotenv()
 
@@ -24,6 +26,7 @@ async def lifespan(app: FastAPI):
         print("[Startup] Server running in offline mode — robot endpoints will return 503")
     yield
     # Disconnect cleanly on shutdown
+    camera_service.close()
     robot.disconnect()
 
 
@@ -40,6 +43,7 @@ app.include_router(status_router)
 app.include_router(commands_router)
 app.include_router(sequences_router)
 app.include_router(ws_router)
+app.include_router(camera_router)
 
 
 @app.get("/health")
