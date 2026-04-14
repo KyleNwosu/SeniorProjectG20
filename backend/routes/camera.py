@@ -11,7 +11,6 @@ from fastapi.responses import StreamingResponse
 router = APIRouter()
 
 CAMERA_INDEX = int(os.getenv("CAMERA_INDEX", "0"))
-CAMERA_SOURCE_URL = os.getenv("CAMERA_SOURCE_URL", "").strip()
 CAMERA_WIDTH = int(os.getenv("CAMERA_WIDTH", "640"))
 CAMERA_HEIGHT = int(os.getenv("CAMERA_HEIGHT", "480"))
 JPEG_QUALITY = int(os.getenv("CAMERA_JPEG_QUALITY", "80"))
@@ -42,27 +41,16 @@ class CameraService:
         self._last_error: str | None = None
         self._backend = _resolve_capture_backend()
 
-    def _open_capture(self) -> cv2.VideoCapture:
-        if CAMERA_SOURCE_URL:
-            # Network camera sources (rtsp/http) should use backend auto-detection.
-            return cv2.VideoCapture(CAMERA_SOURCE_URL)
-        return cv2.VideoCapture(CAMERA_INDEX, self._backend)
-
     def _open_if_needed(self) -> cv2.VideoCapture:
         if self._cap is not None and self._cap.isOpened():
             return self._cap
 
-        cap = self._open_capture()
+        cap = cv2.VideoCapture(CAMERA_INDEX, self._backend)
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, CAMERA_WIDTH)
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, CAMERA_HEIGHT)
 
         if not cap.isOpened():
             cap.release()
-            if CAMERA_SOURCE_URL:
-                raise RuntimeError(
-                    "Unable to open CAMERA_SOURCE_URL. Verify stream URL reachability/credentials "
-                    "and ensure the backend machine is on the same network."
-                )
             raise RuntimeError(
                 "Unable to open camera index "
                 f"{CAMERA_INDEX}. Verify CAMERA_INDEX, backend selection, and OS camera permissions."
@@ -111,7 +99,6 @@ class CameraService:
         with self._lock:
             payload: dict[str, object] = {
                 "ok": False,
-                "camera_source_url": CAMERA_SOURCE_URL or None,
                 "camera_index": CAMERA_INDEX,
                 "camera_backend": self._backend,
                 "last_error": self._last_error,
