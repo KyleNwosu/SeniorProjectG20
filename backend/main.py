@@ -10,6 +10,7 @@ from services.camera_stream import camera
 from services.barcode_scanner import barcode_scanner
 from routes.status import router as status_router
 from routes.commands import router as commands_router
+from routes.actions import router as actions_router
 from routes.sequences import router as sequences_router
 from routes.websocket import router as ws_router
 from routes.camera import router as camera_router
@@ -52,6 +53,7 @@ app.add_middleware(
 
 app.include_router(status_router)
 app.include_router(commands_router)
+app.include_router(actions_router)
 app.include_router(sequences_router)
 app.include_router(ws_router)
 app.include_router(camera_router)

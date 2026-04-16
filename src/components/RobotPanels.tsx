@@ -3,6 +3,7 @@ import { ControlPanel } from "@/components/ControlPanel";
 import { JointStatesPanel } from "@/components/JointStatesPanel";
 import { CameraFeed } from "@/components/CameraFeed";
 import { BarcodeScannerPanel } from "@/components/BarcodeScannerPanel";
+import { SavedActionsPanel } from "@/components/SavedActionsPanel";
 
 export type RobotPanelsLayout = "dashboard" | "control";
 
@@ -25,6 +26,7 @@ export const RobotPanels = ({ layout }: RobotPanelsProps) => {
         </div>
         <CameraFeed />
         <BarcodeScannerPanel />
+        <SavedActionsPanel />
       </div>
     );
   }
@@ -40,6 +42,7 @@ export const RobotPanels = ({ layout }: RobotPanelsProps) => {
       </div>
       <CameraFeed />
       <BarcodeScannerPanel />
+      <SavedActionsPanel />
     </div>
   );
 };

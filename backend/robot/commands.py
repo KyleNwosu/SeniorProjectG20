@@ -32,19 +32,74 @@ def stop():
     robot.base.Stop()
 
 
+def _supported_action_types() -> list[tuple[int, str]]:
+    """
+    Return action categories we can enumerate from Kortex.
+    We probe attributes defensively because enum availability can vary by SDK build.
+    """
+    out: list[tuple[int, str]] = []
+
+    if hasattr(Base_pb2, "REACH_JOINT_ANGLES"):
+        out.append((Base_pb2.REACH_JOINT_ANGLES, "REACH_JOINT_ANGLES"))
+    if hasattr(Base_pb2, "REACH_POSE"):
+        out.append((Base_pb2.REACH_POSE, "REACH_POSE"))
+    if hasattr(Base_pb2, "SEND_GRIPPER_COMMAND"):
+        out.append((Base_pb2.SEND_GRIPPER_COMMAND, "SEND_GRIPPER_COMMAND"))
+
+    return out
+
+
+def list_saved_actions() -> list[dict]:
+    """List saved actions visible to the current session."""
+    actions: list[dict] = []
+    seen: set[tuple[str, str]] = set()
+
+    for action_type_value, action_type_name in _supported_action_types():
+        req = Base_pb2.RequestedActionType()
+        req.action_type = action_type_value
+        action_list = robot.base.ReadAllActions(req)
+
+        for action in action_list.action_list:
+            key = (action.name, action_type_name)
+            if key in seen:
+                continue
+            seen.add(key)
+
+            actions.append(
+                {
+                    "name": action.name,
+                    "category": action_type_name,
+                    "handle_identifier": int(getattr(action.handle, "identifier", 0)),
+                }
+            )
+
+    actions.sort(key=lambda a: (a["name"].lower(), a["category"]))
+    return actions
+
+
+def execute_saved_action(action_name: str):
+    """
+    Execute a saved action by name (case-insensitive) across supported categories.
+    Raises ValueError if not found.
+    """
+    for action_type_value, _ in _supported_action_types():
+        req = Base_pb2.RequestedActionType()
+        req.action_type = action_type_value
+        action_list = robot.base.ReadAllActions(req)
+        handle = next(
+            (a.handle for a in action_list.action_list if a.name.lower() == action_name.lower()),
+            None,
+        )
+        if handle is not None:
+            robot.base.ExecuteActionFromReference(handle)
+            return
+
+    raise ValueError(f"No '{action_name}' action found on the robot.")
+
+
 def go_home():
     """Execute the pre-programmed 'Home' action stored on the robot."""
-    action_type = Base_pb2.RequestedActionType()
-    action_type.action_type = Base_pb2.REACH_JOINT_ANGLES
-
-    action_list = robot.base.ReadAllActions(action_type)
-    home_handle = next(
-        (a.handle for a in action_list.action_list if a.name.lower() == "home"),
-        None,
-    )
-    if home_handle is None:
-        raise ValueError("No 'Home' action found on the robot.")
-    robot.base.ExecuteActionFromReference(home_handle)
+    execute_saved_action("Home")
 
 
 def rotate_base(speed: float):

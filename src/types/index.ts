@@ -10,6 +10,12 @@ export interface BarcodeScan {
   preprocess: string;
 }
 
+export interface SavedRobotAction {
+  name: string;
+  category: string;
+  handle_identifier: number;
+}
+
 // Direct control commands — matches backend routes/commands.py CommandType enum exactly
 export type CommandType =
   | "move_forward"

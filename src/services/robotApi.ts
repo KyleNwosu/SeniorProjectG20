@@ -1,4 +1,10 @@
-import type { RobotStatus, RobotCommand, CommandType, BarcodeScan } from "@/types";
+import type {
+  RobotStatus,
+  RobotCommand,
+  CommandType,
+  BarcodeScan,
+  SavedRobotAction,
+} from "@/types";
 
 const BRIDGE = import.meta.env.VITE_BRIDGE_URL ?? "http://localhost:8000";
 
@@ -90,6 +96,30 @@ export const fetchLatestBarcode = async (): Promise<BarcodeScan | null> => {
   }
   const json = await res.json();
   return json.scan ?? null;
+};
+
+// ── Saved Robot Actions ───────────────────────────────────────────────────────
+
+export const fetchSavedActions = async (): Promise<SavedRobotAction[]> => {
+  const res = await fetch(`${BRIDGE}/api/actions`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail ?? "Failed to fetch saved actions");
+  }
+  const json = await res.json();
+  return (json.actions ?? []) as SavedRobotAction[];
+};
+
+export const executeSavedAction = async (name: string): Promise<void> => {
+  const res = await fetch(`${BRIDGE}/api/actions/execute`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail ?? "Failed to execute saved action");
+  }
 };
 
 // ── WebSocket ─────────────────────────────────────────────────────────────────
