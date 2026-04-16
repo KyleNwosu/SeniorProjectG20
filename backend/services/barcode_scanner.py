@@ -10,6 +10,7 @@ with deduplication/cooldown logic to avoid repeated spam.
 """
 
 import os
+import json
 import re
 import threading
 import time
@@ -156,8 +157,39 @@ def _extract_preferred_pre_block(body: str) -> str:
     return ""
 
 
+def _extract_next_data_payload_text(body: str) -> str:
+    match = re.search(
+        r'<script[^>]*id="__NEXT_DATA__"[^>]*>(.*?)</script>',
+        body,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    if not match:
+        return ""
+
+    try:
+        next_data = json.loads(match.group(1))
+    except Exception:
+        return ""
+
+    page_props = next_data.get("props", {}).get("pageProps", {})
+    raw_text = (
+        page_props.get("data", {})
+        .get("data", {})
+        .get("payload", {})
+        .get("text")
+    )
+    if isinstance(raw_text, str) and raw_text.strip():
+        return raw_text.strip()
+
+    return ""
+
+
 def _extract_text_from_body(body: str, content_type: str) -> str:
     if "html" in content_type.lower():
+        next_data_text = _extract_next_data_payload_text(body)
+        if next_data_text:
+            return next_data_text
+
         preferred_pre_text = _extract_preferred_pre_block(body)
         if preferred_pre_text:
             return preferred_pre_text
