@@ -20,6 +20,8 @@ export const useRobotStore = create<RobotStore>()((set) => ({
     connection: "disconnected",
     currentTask: "",
     joints: [],
+    latestBarcode: null,
+    barcodeScannerRunning: false,
   },
   updateFromFrame: (frame) =>
     set((state) => ({ robotStatus: { ...state.robotStatus, ...frame } })),

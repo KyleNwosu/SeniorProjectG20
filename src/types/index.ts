@@ -1,5 +1,15 @@
 export type RobotConnectionStatus = "connected" | "disconnected" | "connecting";
 
+export interface BarcodeScan {
+  code: string;
+  type: string;
+  timestamp: string;
+  bbox: [number, number, number, number]; // [x, y, width, height]
+  frame_id: number;
+  source: string;
+  preprocess: string;
+}
+
 // Direct control commands — matches backend routes/commands.py CommandType enum exactly
 export type CommandType =
   | "move_forward"
@@ -31,6 +41,8 @@ export interface RobotStatus {
   connection: RobotConnectionStatus;
   currentTask: string;
   joints: number[];  // degrees, index 0–5 (base → wrist)
+  latestBarcode?: BarcodeScan | null;
+  barcodeScannerRunning?: boolean;
 }
 
 // Matches backend routes/sequences.py TaskAction enum exactly

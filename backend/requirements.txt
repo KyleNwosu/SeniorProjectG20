@@ -4,3 +4,4 @@ python-dotenv>=1.0.0
 kortex-api>=2.6.0
 opencv-python-headless>=4.9.0
 numpy>=1.26.0
+pyzbar>=0.1.9

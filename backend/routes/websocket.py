@@ -9,6 +9,7 @@ import json
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from robot.session import robot
+from services.barcode_scanner import barcode_scanner
 from routes.status import _ARM_STATE_MAP
 
 router = APIRouter()
@@ -54,6 +55,8 @@ class ConnectionManager:
                         "connection": "connected",
                         "currentTask": "Idle" if status == "idle" else "Running",
                         "joints": [round(a.position, 2) for a in feedback.actuators],
+                        "latestBarcode": barcode_scanner.latest_confirmed(),
+                        "barcodeScannerRunning": barcode_scanner.is_running,
                     }
                 except Exception as e:
                     payload = {
@@ -62,6 +65,8 @@ class ConnectionManager:
                         "connection": "disconnected",
                         "currentTask": str(e),
                         "joints": [],
+                        "latestBarcode": barcode_scanner.latest_confirmed(),
+                        "barcodeScannerRunning": barcode_scanner.is_running,
                     }
             else:
                 payload = {
@@ -70,6 +75,8 @@ class ConnectionManager:
                     "connection": "disconnected",
                     "currentTask": "Idle",
                     "joints": [],
+                    "latestBarcode": barcode_scanner.latest_confirmed(),
+                    "barcodeScannerRunning": barcode_scanner.is_running,
                 }
 
             await self.broadcast(payload)

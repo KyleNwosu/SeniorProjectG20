@@ -7,11 +7,13 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from robot.session import robot
 from services.camera_stream import camera
+from services.barcode_scanner import barcode_scanner
 from routes.status import router as status_router
 from routes.commands import router as commands_router
 from routes.sequences import router as sequences_router
 from routes.websocket import router as ws_router
 from routes.camera import router as camera_router
+from routes.barcode import router as barcode_router
 
 load_dotenv()
 
@@ -34,6 +36,7 @@ async def lifespan(app: FastAPI):
     yield
 
     # Shutdown cleanly
+    barcode_scanner.stop()
     camera.stop()
     robot.disconnect()
 
@@ -52,6 +55,7 @@ app.include_router(commands_router)
 app.include_router(sequences_router)
 app.include_router(ws_router)
 app.include_router(camera_router)
+app.include_router(barcode_router)
 
 
 @app.get("/health")
