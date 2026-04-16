@@ -5,20 +5,39 @@ import { Scheduler } from "@/components/Scheduler";
 import { Bot } from "lucide-react";
 import { useRobotTelemetry } from "@/hooks/useRobotTelemetry";
 import { useRosConnection } from "@/hooks/useRosConnection";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/context/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 const Index = () => {
+  const navigate = useNavigate();
+  const { user, signOut } = useAuth();
+
   useRobotTelemetry();
   useRosConnection();
+
+  const handleSignOut = () => {
+    signOut();
+    navigate("/auth", { replace: true });
+  };
 
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center gap-3">
-            <Bot className="h-8 w-8 text-primary" />
-            <div>
-              <h1 className="text-2xl font-bold">RoboControl</h1>
-              <p className="text-sm text-muted-foreground">Consumer Robotics Interface</p>
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <Bot className="h-8 w-8 text-primary" />
+              <div>
+                <h1 className="text-2xl font-bold">RoboControl</h1>
+                <p className="text-sm text-muted-foreground">Consumer Robotics Interface</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              {user ? <p className="hidden text-sm text-muted-foreground md:block">{user.email}</p> : null}
+              <Button variant="outline" onClick={handleSignOut}>
+                Sign Out
+              </Button>
             </div>
           </div>
         </div>

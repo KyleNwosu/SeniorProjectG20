@@ -2,6 +2,8 @@ export type RobotConnectionStatus = "connected" | "disconnected" | "connecting";
 
 export interface BarcodeScan {
   code: string;
+  raw_code?: string;
+  resolved_from_url?: string;
   type: string;
   timestamp: string;
   bbox: [number, number, number, number]; // [x, y, width, height]

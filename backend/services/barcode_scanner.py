@@ -13,6 +13,11 @@ import os
 import threading
 import time
 from datetime import datetime, timezone
+from html import unescape
+from html.parser import HTMLParser
+from urllib.error import URLError
+from urllib.parse import urlparse
+from urllib.request import Request, urlopen
 
 import cv2
 import numpy as np
@@ -28,6 +33,9 @@ BARCODE_COOLDOWN_SEC = float(os.getenv("BARCODE_COOLDOWN_SEC", "1.5"))
 BARCODE_ENABLE_CLAHE = os.getenv("BARCODE_ENABLE_CLAHE", "true").lower() == "true"
 BARCODE_ENABLE_ADAPTIVE = os.getenv("BARCODE_ENABLE_ADAPTIVE", "true").lower() == "true"
 BARCODE_ENABLE_SHARPEN = os.getenv("BARCODE_ENABLE_SHARPEN", "false").lower() == "true"
+BARCODE_RESOLVE_URL_TEXT = os.getenv("BARCODE_RESOLVE_URL_TEXT", "true").lower() == "true"
+BARCODE_RESOLVE_TIMEOUT_SEC = float(os.getenv("BARCODE_RESOLVE_TIMEOUT_SEC", "2.5"))
+BARCODE_MAX_TEXT_CHARS = int(os.getenv("BARCODE_MAX_TEXT_CHARS", "1200"))
 
 _SCAN_INTERVAL = max(0.01, 1.0 / max(1.0, BARCODE_SCAN_FPS))
 
@@ -51,8 +59,10 @@ def _to_scan_payload(
     frame_id: int,
     source: str,
     preprocess: str,
+    raw_code: str | None = None,
+    resolved_from_url: str | None = None,
 ) -> dict:
-    return {
+    payload = {
         "code": code,
         "type": symbology,
         "timestamp": _now_iso(),
@@ -61,6 +71,76 @@ def _to_scan_payload(
         "source": source,
         "preprocess": preprocess,
     }
+    if raw_code:
+        payload["raw_code"] = raw_code
+    if resolved_from_url:
+        payload["resolved_from_url"] = resolved_from_url
+    return payload
+
+
+def _looks_like_url(value: str) -> bool:
+    if not value or " " in value:
+        return False
+    lowered = value.lower()
+    if lowered.startswith("http://") or lowered.startswith("https://"):
+        return True
+    return "." in value and "/" in value
+
+
+def _normalize_url(value: str) -> str | None:
+    text = value.strip()
+    if not _looks_like_url(text):
+        return None
+    if text.lower().startswith(("http://", "https://")):
+        return text
+    return f"https://{text}"
+
+
+class _TextExtractor(HTMLParser):
+    _BLOCK_TAGS = {
+        "p",
+        "div",
+        "li",
+        "br",
+        "h1",
+        "h2",
+        "h3",
+        "h4",
+        "h5",
+        "h6",
+        "tr",
+    }
+
+    def __init__(self):
+        super().__init__()
+        self.parts: list[str] = []
+
+    def handle_starttag(self, tag, attrs):
+        if tag in self._BLOCK_TAGS:
+            self.parts.append("\n")
+
+    def handle_endtag(self, tag):
+        if tag in self._BLOCK_TAGS:
+            self.parts.append("\n")
+
+    def handle_data(self, data):
+        if data:
+            self.parts.append(data)
+
+    def get_text(self) -> str:
+        text = "".join(self.parts)
+        lines = [line.strip() for line in text.splitlines()]
+        return "\n".join(line for line in lines if line)
+
+
+def _extract_text_from_body(body: str, content_type: str) -> str:
+    if "html" in content_type.lower():
+        parser = _TextExtractor()
+        parser.feed(body)
+        text = parser.get_text()
+    else:
+        text = body.strip()
+    return unescape(text)
 
 
 class BarcodeScanner:
@@ -77,6 +157,7 @@ class BarcodeScanner:
         self._last_emitted_code: str | None = None
         self._last_emitted_time = 0.0
         self._frame_id = 0
+        self._resolved_code_cache: dict[str, tuple[str, str | None]] = {}
 
         self._qr_detector = cv2.QRCodeDetector()
 
@@ -179,22 +260,27 @@ class BarcodeScanner:
         raw = best.data.decode("utf-8", errors="ignore").strip()
         if not raw:
             return None
+        resolved_code, resolved_from_url = self._resolve_code(raw)
 
         rect = best.rect
         bbox = [int(rect.left), int(rect.top), int(rect.width), int(rect.height)]
         return _to_scan_payload(
-            code=raw,
+            code=resolved_code,
             symbology=str(best.type),
             bbox=bbox,
             frame_id=frame_id,
             source="pyzbar",
             preprocess=preprocess,
+            raw_code=raw if resolved_from_url else None,
+            resolved_from_url=resolved_from_url,
         )
 
     def _decode_with_qr_fallback(self, image: np.ndarray, frame_id: int, preprocess: str) -> dict | None:
         text, points, _ = self._qr_detector.detectAndDecode(image)
         if not text:
             return None
+        raw = text.strip()
+        resolved_code, resolved_from_url = self._resolve_code(raw)
 
         bbox = [0, 0, 0, 0]
         if points is not None and len(points) > 0:
@@ -206,13 +292,58 @@ class BarcodeScanner:
             bbox = [x_min, y_min, max(0, x_max - x_min), max(0, y_max - y_min)]
 
         return _to_scan_payload(
-            code=text.strip(),
+            code=resolved_code,
             symbology="QRCODE",
             bbox=bbox,
             frame_id=frame_id,
             source="opencv_qr_fallback",
             preprocess=preprocess,
+            raw_code=raw if resolved_from_url else None,
+            resolved_from_url=resolved_from_url,
         )
+
+    def _resolve_code(self, raw_code: str) -> tuple[str, str | None]:
+        if not BARCODE_RESOLVE_URL_TEXT:
+            return raw_code, None
+
+        cached = self._resolved_code_cache.get(raw_code)
+        if cached:
+            return cached
+
+        normalized_url = _normalize_url(raw_code)
+        if not normalized_url:
+            result = (raw_code, None)
+            self._resolved_code_cache[raw_code] = result
+            return result
+
+        parsed = urlparse(normalized_url)
+        if not parsed.netloc:
+            result = (raw_code, None)
+            self._resolved_code_cache[raw_code] = result
+            return result
+
+        try:
+            req = Request(
+                normalized_url,
+                headers={"User-Agent": "RoboControlBarcodeScanner/1.0"},
+            )
+            with urlopen(req, timeout=BARCODE_RESOLVE_TIMEOUT_SEC) as response:
+                content_type = response.headers.get("Content-Type", "text/plain")
+                body_bytes = response.read(BARCODE_MAX_TEXT_CHARS * 6)
+                body = body_bytes.decode("utf-8", errors="ignore")
+
+            extracted = _extract_text_from_body(body, content_type)
+            if not extracted:
+                result = (raw_code, None)
+            else:
+                result = (extracted[:BARCODE_MAX_TEXT_CHARS], normalized_url)
+        except (URLError, TimeoutError, ValueError):
+            result = (raw_code, None)
+        except Exception:
+            result = (raw_code, None)
+
+        self._resolved_code_cache[raw_code] = result
+        return result
 
     def _process_candidate(self, scan: dict) -> None:
         code = scan["code"]

@@ -116,7 +116,19 @@ export const BarcodeScannerPanel = () => {
           <p className="text-sm font-medium mb-2">Latest confirmed scan</p>
           {latest ? (
             <div className="space-y-1 text-sm">
-              <p><span className="text-muted-foreground">Code:</span> {latest.code}</p>
+              <p className="whitespace-pre-wrap break-words">
+                <span className="text-muted-foreground">Text:</span> {latest.code}
+              </p>
+              {latest.raw_code ? (
+                <p className="break-words">
+                  <span className="text-muted-foreground">Original QR value:</span> {latest.raw_code}
+                </p>
+              ) : null}
+              {latest.resolved_from_url ? (
+                <p className="break-words">
+                  <span className="text-muted-foreground">Resolved from:</span> {latest.resolved_from_url}
+                </p>
+              ) : null}
               <p><span className="text-muted-foreground">Type:</span> {latest.type}</p>
               <p><span className="text-muted-foreground">Source:</span> {latest.source}</p>
               <p><span className="text-muted-foreground">Preprocess:</span> {latest.preprocess}</p>
