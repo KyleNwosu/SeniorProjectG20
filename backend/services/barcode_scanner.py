@@ -10,6 +10,7 @@ with deduplication/cooldown logic to avoid repeated spam.
 """
 
 import os
+import re
 import threading
 import time
 from datetime import datetime, timezone
@@ -133,8 +134,34 @@ class _TextExtractor(HTMLParser):
         return "\n".join(line for line in lines if line)
 
 
+def _extract_preferred_pre_block(body: str) -> str:
+    # Preferred source: qrly text preview block.
+    match = re.search(
+        r'<pre[^>]*class="[^"]*TextPreview[^"]*__pre[^"]*"[^>]*>(.*?)</pre>',
+        body,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    if match:
+        text = unescape(match.group(1).strip())
+        if text:
+            return text
+
+    # Fallback: any <pre> block if preview class is not present.
+    generic = re.search(r"<pre[^>]*>(.*?)</pre>", body, flags=re.IGNORECASE | re.DOTALL)
+    if generic:
+        text = unescape(generic.group(1).strip())
+        if text:
+            return text
+
+    return ""
+
+
 def _extract_text_from_body(body: str, content_type: str) -> str:
     if "html" in content_type.lower():
+        preferred_pre_text = _extract_preferred_pre_block(body)
+        if preferred_pre_text:
+            return preferred_pre_text
+
         parser = _TextExtractor()
         parser.feed(body)
         text = parser.get_text()
