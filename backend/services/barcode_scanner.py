@@ -193,12 +193,11 @@ def _extract_text_from_body(body: str, content_type: str) -> str:
         preferred_pre_text = _extract_preferred_pre_block(body)
         if preferred_pre_text:
             return preferred_pre_text
+        # Strict mode for qrly-like pages: do not parse generic DOM text,
+        # because script/style payloads cause noisy "gibberish" output.
+        return ""
 
-        parser = _TextExtractor()
-        parser.feed(body)
-        text = parser.get_text()
-    else:
-        text = body.strip()
+    text = body.strip()
     return unescape(text)
 
 
