@@ -40,6 +40,7 @@ BARCODE_RESOLVE_URL_TEXT = os.getenv("BARCODE_RESOLVE_URL_TEXT", "true").lower()
 BARCODE_RESOLVE_TIMEOUT_SEC = float(os.getenv("BARCODE_RESOLVE_TIMEOUT_SEC", "6.0"))
 BARCODE_MAX_TEXT_CHARS = int(os.getenv("BARCODE_MAX_TEXT_CHARS", "1200"))
 BARCODE_ALLOW_INSECURE_SSL_FALLBACK = os.getenv("BARCODE_ALLOW_INSECURE_SSL_FALLBACK", "true").lower() == "true"
+BARCODE_MAX_FETCH_BYTES = int(os.getenv("BARCODE_MAX_FETCH_BYTES", "262144"))
 
 _SCAN_INTERVAL = max(0.01, 1.0 / max(1.0, BARCODE_SCAN_FPS))
 
@@ -401,7 +402,7 @@ class BarcodeScanner:
             )
             with urlopen(req, timeout=BARCODE_RESOLVE_TIMEOUT_SEC) as response:
                 content_type = response.headers.get("Content-Type", "text/plain")
-                body_bytes = response.read(BARCODE_MAX_TEXT_CHARS * 6)
+                body_bytes = response.read(BARCODE_MAX_FETCH_BYTES)
                 body = body_bytes.decode("utf-8", errors="ignore")
         except ssl.SSLCertVerificationError:
             if not BARCODE_ALLOW_INSECURE_SSL_FALLBACK:
@@ -418,7 +419,7 @@ class BarcodeScanner:
                 )
                 with urlopen(req, timeout=BARCODE_RESOLVE_TIMEOUT_SEC, context=insecure_ctx) as response:
                     content_type = response.headers.get("Content-Type", "text/plain")
-                    body_bytes = response.read(BARCODE_MAX_TEXT_CHARS * 6)
+                    body_bytes = response.read(BARCODE_MAX_FETCH_BYTES)
                     body = body_bytes.decode("utf-8", errors="ignore")
             except Exception as e:
                 print(f"[Barcode] URL resolve failed (insecure SSL fallback): {normalized_url} ({type(e).__name__})")
