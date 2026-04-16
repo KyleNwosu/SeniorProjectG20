@@ -12,6 +12,7 @@ with deduplication/cooldown logic to avoid repeated spam.
 import os
 import json
 import re
+import ssl
 import threading
 import time
 from datetime import datetime, timezone
@@ -38,6 +39,7 @@ BARCODE_ENABLE_SHARPEN = os.getenv("BARCODE_ENABLE_SHARPEN", "false").lower() ==
 BARCODE_RESOLVE_URL_TEXT = os.getenv("BARCODE_RESOLVE_URL_TEXT", "true").lower() == "true"
 BARCODE_RESOLVE_TIMEOUT_SEC = float(os.getenv("BARCODE_RESOLVE_TIMEOUT_SEC", "2.5"))
 BARCODE_MAX_TEXT_CHARS = int(os.getenv("BARCODE_MAX_TEXT_CHARS", "1200"))
+BARCODE_ALLOW_INSECURE_SSL_FALLBACK = os.getenv("BARCODE_ALLOW_INSECURE_SSL_FALLBACK", "true").lower() == "true"
 
 _SCAN_INTERVAL = max(0.01, 1.0 / max(1.0, BARCODE_SCAN_FPS))
 
@@ -389,7 +391,38 @@ class BarcodeScanner:
                 content_type = response.headers.get("Content-Type", "text/plain")
                 body_bytes = response.read(BARCODE_MAX_TEXT_CHARS * 6)
                 body = body_bytes.decode("utf-8", errors="ignore")
+        except ssl.SSLCertVerificationError:
+            if not BARCODE_ALLOW_INSECURE_SSL_FALLBACK:
+                result = (raw_code, None)
+                self._resolved_code_cache[raw_code] = result
+                return result
 
+            # Some local Python environments miss root certs; allow a demo-safe
+            # fallback so URL-backed QR text can still be resolved.
+            insecure_ctx = ssl._create_unverified_context()
+            try:
+                req = Request(
+                    normalized_url,
+                    headers={"User-Agent": "RoboControlBarcodeScanner/1.0"},
+                )
+                with urlopen(req, timeout=BARCODE_RESOLVE_TIMEOUT_SEC, context=insecure_ctx) as response:
+                    content_type = response.headers.get("Content-Type", "text/plain")
+                    body_bytes = response.read(BARCODE_MAX_TEXT_CHARS * 6)
+                    body = body_bytes.decode("utf-8", errors="ignore")
+            except Exception:
+                result = (raw_code, None)
+                self._resolved_code_cache[raw_code] = result
+                return result
+        except (URLError, TimeoutError, ValueError):
+            result = (raw_code, None)
+            self._resolved_code_cache[raw_code] = result
+            return result
+        except Exception:
+            result = (raw_code, None)
+            self._resolved_code_cache[raw_code] = result
+            return result
+
+        try:
             extracted = _extract_text_from_body(body, content_type)
             if not extracted:
                 result = (raw_code, None)
