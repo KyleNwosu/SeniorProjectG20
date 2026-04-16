@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -7,10 +7,20 @@ import { useToast } from "@/hooks/use-toast";
 import { useRobotStore } from "@/store/useRobotStore";
 import {
   fetchBarcodeStatus,
+  resolveBarcodeText,
   startBarcodeScanner,
   stopBarcodeScanner,
   type BarcodeStatus,
 } from "@/services/robotApi";
+import type { BarcodeScan } from "@/types";
+
+const looksLikeUrl = (value: string): boolean => {
+  const trimmed = value.trim();
+  if (!trimmed || trimmed.includes(" ")) {
+    return false;
+  }
+  return trimmed.includes(".") && trimmed.includes("/");
+};
 
 export const BarcodeScannerPanel = () => {
   const { toast } = useToast();
@@ -20,6 +30,62 @@ export const BarcodeScannerPanel = () => {
 
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<BarcodeStatus | null>(null);
+  const [displayScan, setDisplayScan] = useState<BarcodeScan | null>(null);
+  const [resolvingText, setResolvingText] = useState(false);
+  const lastResolvedKeyRef = useRef<string>("");
+
+  useEffect(() => {
+    if (!latest) {
+      setDisplayScan(null);
+      return;
+    }
+
+    let cancelled = false;
+    const sourceCode = (latest.raw_code ?? latest.code).trim();
+    const resolveKey = `${latest.timestamp}:${sourceCode}`;
+
+    if (lastResolvedKeyRef.current === resolveKey) {
+      setResolvingText(false);
+      return;
+    }
+    lastResolvedKeyRef.current = resolveKey;
+
+    if (!looksLikeUrl(sourceCode)) {
+      setDisplayScan(latest);
+      setResolvingText(false);
+      return;
+    }
+
+    setDisplayScan(latest);
+    setResolvingText(true);
+
+    (async () => {
+      try {
+        const resolved = await resolveBarcodeText(sourceCode);
+        if (cancelled) {
+          return;
+        }
+        setDisplayScan({
+          ...latest,
+          ...resolved,
+          code: typeof resolved.code === "string" && resolved.code.trim() ? resolved.code : latest.code,
+          raw_code: resolved.raw_code ?? latest.raw_code ?? sourceCode,
+        });
+      } catch {
+        if (!cancelled) {
+          setDisplayScan(latest);
+        }
+      } finally {
+        if (!cancelled) {
+          setResolvingText(false);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [latest]);
 
   useEffect(() => {
     let cancelled = false;
@@ -77,6 +143,8 @@ export const BarcodeScannerPanel = () => {
     }
   };
 
+  const scanToRender = displayScan ?? latest;
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -114,25 +182,28 @@ export const BarcodeScannerPanel = () => {
 
         <div className="rounded-md border p-3">
           <p className="text-sm font-medium mb-2">Latest confirmed scan</p>
-          {latest ? (
+          {scanToRender ? (
             <div className="space-y-1 text-sm">
+              {resolvingText ? (
+                <p className="text-xs text-muted-foreground">Resolving QR link to text...</p>
+              ) : null}
               <p className="whitespace-pre-wrap break-words">
-                <span className="text-muted-foreground">Text:</span> {latest.code}
+                <span className="text-muted-foreground">Text:</span> {scanToRender.code}
               </p>
-              {latest.raw_code ? (
+              {scanToRender.raw_code ? (
                 <p className="break-words">
-                  <span className="text-muted-foreground">Original QR value:</span> {latest.raw_code}
+                  <span className="text-muted-foreground">Original QR value:</span> {scanToRender.raw_code}
                 </p>
               ) : null}
-              {latest.resolved_from_url ? (
+              {scanToRender.resolved_from_url ? (
                 <p className="break-words">
-                  <span className="text-muted-foreground">Resolved from:</span> {latest.resolved_from_url}
+                  <span className="text-muted-foreground">Resolved from:</span> {scanToRender.resolved_from_url}
                 </p>
               ) : null}
-              <p><span className="text-muted-foreground">Type:</span> {latest.type}</p>
-              <p><span className="text-muted-foreground">Source:</span> {latest.source}</p>
-              <p><span className="text-muted-foreground">Preprocess:</span> {latest.preprocess}</p>
-              <p><span className="text-muted-foreground">Time:</span> {new Date(latest.timestamp).toLocaleString()}</p>
+              <p><span className="text-muted-foreground">Type:</span> {scanToRender.type}</p>
+              <p><span className="text-muted-foreground">Source:</span> {scanToRender.source}</p>
+              <p><span className="text-muted-foreground">Preprocess:</span> {scanToRender.preprocess}</p>
+              <p><span className="text-muted-foreground">Time:</span> {new Date(scanToRender.timestamp).toLocaleString()}</p>
             </div>
           ) : (
             <p className="text-sm text-muted-foreground">No barcode confirmed yet.</p>

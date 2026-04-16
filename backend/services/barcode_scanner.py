@@ -37,7 +37,7 @@ BARCODE_ENABLE_CLAHE = os.getenv("BARCODE_ENABLE_CLAHE", "true").lower() == "tru
 BARCODE_ENABLE_ADAPTIVE = os.getenv("BARCODE_ENABLE_ADAPTIVE", "true").lower() == "true"
 BARCODE_ENABLE_SHARPEN = os.getenv("BARCODE_ENABLE_SHARPEN", "false").lower() == "true"
 BARCODE_RESOLVE_URL_TEXT = os.getenv("BARCODE_RESOLVE_URL_TEXT", "true").lower() == "true"
-BARCODE_RESOLVE_TIMEOUT_SEC = float(os.getenv("BARCODE_RESOLVE_TIMEOUT_SEC", "2.5"))
+BARCODE_RESOLVE_TIMEOUT_SEC = float(os.getenv("BARCODE_RESOLVE_TIMEOUT_SEC", "6.0"))
 BARCODE_MAX_TEXT_CHARS = int(os.getenv("BARCODE_MAX_TEXT_CHARS", "1200"))
 BARCODE_ALLOW_INSECURE_SSL_FALLBACK = os.getenv("BARCODE_ALLOW_INSECURE_SSL_FALLBACK", "true").lower() == "true"
 
@@ -243,6 +243,18 @@ class BarcodeScanner:
         with self._lock:
             return dict(self._latest_confirmed) if self._latest_confirmed else None
 
+    def resolve_scan_text(self, raw_value: str) -> dict:
+        code = raw_value.strip()
+        if not code:
+            return {"code": ""}
+
+        resolved_code, resolved_from_url = self._resolve_code(code)
+        payload: dict = {"code": resolved_code}
+        if resolved_from_url:
+            payload["raw_code"] = code
+            payload["resolved_from_url"] = resolved_from_url
+        return payload
+
     def status(self) -> dict:
         return {
             "running": self._running,
@@ -393,9 +405,8 @@ class BarcodeScanner:
                 body = body_bytes.decode("utf-8", errors="ignore")
         except ssl.SSLCertVerificationError:
             if not BARCODE_ALLOW_INSECURE_SSL_FALLBACK:
-                result = (raw_code, None)
-                self._resolved_code_cache[raw_code] = result
-                return result
+                print(f"[Barcode] URL resolve failed (SSL verify): {normalized_url}")
+                return raw_code, None
 
             # Some local Python environments miss root certs; allow a demo-safe
             # fallback so URL-backed QR text can still be resolved.
@@ -409,18 +420,15 @@ class BarcodeScanner:
                     content_type = response.headers.get("Content-Type", "text/plain")
                     body_bytes = response.read(BARCODE_MAX_TEXT_CHARS * 6)
                     body = body_bytes.decode("utf-8", errors="ignore")
-            except Exception:
-                result = (raw_code, None)
-                self._resolved_code_cache[raw_code] = result
-                return result
-        except (URLError, TimeoutError, ValueError):
-            result = (raw_code, None)
-            self._resolved_code_cache[raw_code] = result
-            return result
-        except Exception:
-            result = (raw_code, None)
-            self._resolved_code_cache[raw_code] = result
-            return result
+            except Exception as e:
+                print(f"[Barcode] URL resolve failed (insecure SSL fallback): {normalized_url} ({type(e).__name__})")
+                return raw_code, None
+        except (URLError, TimeoutError, ValueError) as e:
+            print(f"[Barcode] URL resolve failed: {normalized_url} ({type(e).__name__})")
+            return raw_code, None
+        except Exception as e:
+            print(f"[Barcode] URL resolve failed: {normalized_url} ({type(e).__name__})")
+            return raw_code, None
 
         try:
             extracted = _extract_text_from_body(body, content_type)
@@ -433,7 +441,9 @@ class BarcodeScanner:
         except Exception:
             result = (raw_code, None)
 
-        self._resolved_code_cache[raw_code] = result
+        # Cache only successful URL resolutions to avoid pinning transient failures.
+        if result[1]:
+            self._resolved_code_cache[raw_code] = result
         return result
 
     def _process_candidate(self, scan: dict) -> None:

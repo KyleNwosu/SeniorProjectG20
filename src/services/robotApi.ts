@@ -98,6 +98,20 @@ export const fetchLatestBarcode = async (): Promise<BarcodeScan | null> => {
   return json.scan ?? null;
 };
 
+export const resolveBarcodeText = async (code: string): Promise<Partial<BarcodeScan>> => {
+  const res = await fetch(`${BRIDGE}/api/barcode/resolve`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ code }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail ?? "Failed to resolve barcode text");
+  }
+  const json = await res.json();
+  return (json.scan ?? {}) as Partial<BarcodeScan>;
+};
+
 // ── Saved Robot Actions ───────────────────────────────────────────────────────
 
 export const fetchSavedActions = async (): Promise<SavedRobotAction[]> => {

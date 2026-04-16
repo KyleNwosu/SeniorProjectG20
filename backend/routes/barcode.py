@@ -1,9 +1,14 @@
 from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
 
 from services.camera_stream import camera
 from services.barcode_scanner import barcode_scanner
 
 router = APIRouter()
+
+
+class BarcodeResolveRequest(BaseModel):
+    code: str
 
 
 @router.post("/api/barcode/start")
@@ -28,3 +33,10 @@ async def get_latest_barcode():
 @router.get("/api/barcode/status")
 async def get_barcode_status():
     return barcode_scanner.status()
+
+
+@router.post("/api/barcode/resolve")
+async def resolve_barcode_text(payload: BarcodeResolveRequest):
+    if not payload.code.strip():
+        raise HTTPException(status_code=400, detail="Code is required")
+    return {"scan": barcode_scanner.resolve_scan_text(payload.code)}
