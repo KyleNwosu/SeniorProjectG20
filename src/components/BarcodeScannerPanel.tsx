@@ -181,32 +181,18 @@ export const BarcodeScannerPanel = () => {
         )}
 
         <div className="rounded-md border p-3">
-          <p className="text-sm font-medium mb-2">Latest confirmed scan</p>
+          <p className="text-sm font-medium mb-2">Latest QR Text</p>
           {scanToRender ? (
             <div className="space-y-1 text-sm">
               {resolvingText ? (
                 <p className="text-xs text-muted-foreground">Resolving QR link to text...</p>
               ) : null}
-              <p className="whitespace-pre-wrap break-words">
-                <span className="text-muted-foreground">Text:</span> {scanToRender.code}
+              <p className="whitespace-pre-wrap break-words text-lg font-bold leading-relaxed">
+                {scanToRender.code}
               </p>
-              {scanToRender.raw_code ? (
-                <p className="break-words">
-                  <span className="text-muted-foreground">Original QR value:</span> {scanToRender.raw_code}
-                </p>
-              ) : null}
-              {scanToRender.resolved_from_url ? (
-                <p className="break-words">
-                  <span className="text-muted-foreground">Resolved from:</span> {scanToRender.resolved_from_url}
-                </p>
-              ) : null}
-              <p><span className="text-muted-foreground">Type:</span> {scanToRender.type}</p>
-              <p><span className="text-muted-foreground">Source:</span> {scanToRender.source}</p>
-              <p><span className="text-muted-foreground">Preprocess:</span> {scanToRender.preprocess}</p>
-              <p><span className="text-muted-foreground">Time:</span> {new Date(scanToRender.timestamp).toLocaleString()}</p>
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">No barcode confirmed yet.</p>
+            <p className="text-sm text-muted-foreground">No QR text available yet.</p>
           )}
         </div>
       </CardContent>
