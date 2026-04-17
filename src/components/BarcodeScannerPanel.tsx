@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ScanBarcode, Square } from "lucide-react";
+import { ChevronDown, Copy, ScanBarcode, Square, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useRobotStore } from "@/store/useRobotStore";
 import {
@@ -13,6 +13,7 @@ import {
   type BarcodeStatus,
 } from "@/services/robotApi";
 import type { BarcodeScan } from "@/types";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 const looksLikeUrl = (value: string): boolean => {
   const trimmed = value.trim();
@@ -32,6 +33,8 @@ export const BarcodeScannerPanel = () => {
   const [status, setStatus] = useState<BarcodeStatus | null>(null);
   const [displayScan, setDisplayScan] = useState<BarcodeScan | null>(null);
   const [resolvingText, setResolvingText] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [clearedScanKey, setClearedScanKey] = useState<string | null>(null);
   const lastResolvedKeyRef = useRef<string>("");
 
   useEffect(() => {
@@ -144,6 +147,30 @@ export const BarcodeScannerPanel = () => {
   };
 
   const scanToRender = displayScan ?? latest;
+  const currentScanKey = scanToRender ? `${scanToRender.timestamp}:${scanToRender.code}` : null;
+  const visibleScan = currentScanKey && currentScanKey === clearedScanKey ? null : scanToRender;
+
+  const handleCopyText = async () => {
+    if (!visibleScan?.code) {
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(visibleScan.code);
+      toast({ title: "QR text copied" });
+    } catch {
+      toast({
+        title: "Copy failed",
+        description: "Could not copy QR text to clipboard.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleClear = () => {
+    if (currentScanKey) {
+      setClearedScanKey(currentScanKey);
+    }
+  };
 
   return (
     <Card>
@@ -182,14 +209,38 @@ export const BarcodeScannerPanel = () => {
 
         <div className="rounded-md border p-3">
           <p className="text-sm font-medium mb-2">Latest QR Text</p>
-          {scanToRender ? (
+          {visibleScan ? (
             <div className="space-y-1 text-sm">
               {resolvingText ? (
                 <p className="text-xs text-muted-foreground">Resolving QR link to text...</p>
               ) : null}
               <p className="whitespace-pre-wrap break-words text-lg font-bold leading-relaxed">
-                {scanToRender.code}
+                {visibleScan.code}
               </p>
+              <div className="flex flex-wrap gap-2 pt-2">
+                <Button type="button" variant="secondary" size="sm" onClick={() => void handleCopyText()}>
+                  <Copy className="mr-2 h-4 w-4" />
+                  Copy
+                </Button>
+                <Button type="button" variant="outline" size="sm" onClick={handleClear}>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Clear
+                </Button>
+                {(visibleScan.raw_code || visibleScan.resolved_from_url) ? (
+                  <Collapsible open={detailsOpen} onOpenChange={setDetailsOpen}>
+                    <CollapsibleTrigger asChild>
+                      <Button type="button" variant="ghost" size="sm">
+                        <ChevronDown className="mr-2 h-4 w-4" />
+                        {detailsOpen ? "Hide Details" : "Show Details"}
+                      </Button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="mt-2 space-y-1 text-xs text-muted-foreground">
+                      {visibleScan.raw_code ? <p>Raw URL: {visibleScan.raw_code}</p> : null}
+                      {visibleScan.resolved_from_url ? <p>Resolved from: {visibleScan.resolved_from_url}</p> : null}
+                    </CollapsibleContent>
+                  </Collapsible>
+                ) : null}
+              </div>
             </div>
           ) : (
             <p className="text-sm text-muted-foreground">No QR text available yet.</p>

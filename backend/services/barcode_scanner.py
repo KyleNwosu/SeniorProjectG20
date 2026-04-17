@@ -17,7 +17,6 @@ import threading
 import time
 from datetime import datetime, timezone
 from html import unescape
-from html.parser import HTMLParser
 from urllib.error import URLError
 from urllib.parse import urlparse
 from urllib.request import Request, urlopen
@@ -64,10 +63,8 @@ def _to_scan_payload(
     frame_id: int,
     source: str,
     preprocess: str,
-    raw_code: str | None = None,
-    resolved_from_url: str | None = None,
 ) -> dict:
-    payload = {
+    return {
         "code": code,
         "type": symbology,
         "timestamp": _now_iso(),
@@ -76,11 +73,6 @@ def _to_scan_payload(
         "source": source,
         "preprocess": preprocess,
     }
-    if raw_code:
-        payload["raw_code"] = raw_code
-    if resolved_from_url:
-        payload["resolved_from_url"] = resolved_from_url
-    return payload
 
 
 def _looks_like_url(value: str) -> bool:
@@ -99,43 +91,6 @@ def _normalize_url(value: str) -> str | None:
     if text.lower().startswith(("http://", "https://")):
         return text
     return f"https://{text}"
-
-
-class _TextExtractor(HTMLParser):
-    _BLOCK_TAGS = {
-        "p",
-        "div",
-        "li",
-        "br",
-        "h1",
-        "h2",
-        "h3",
-        "h4",
-        "h5",
-        "h6",
-        "tr",
-    }
-
-    def __init__(self):
-        super().__init__()
-        self.parts: list[str] = []
-
-    def handle_starttag(self, tag, attrs):
-        if tag in self._BLOCK_TAGS:
-            self.parts.append("\n")
-
-    def handle_endtag(self, tag):
-        if tag in self._BLOCK_TAGS:
-            self.parts.append("\n")
-
-    def handle_data(self, data):
-        if data:
-            self.parts.append(data)
-
-    def get_text(self) -> str:
-        text = "".join(self.parts)
-        lines = [line.strip() for line in text.splitlines()]
-        return "\n".join(line for line in lines if line)
 
 
 def _extract_preferred_pre_block(body: str) -> str:
@@ -333,19 +288,16 @@ class BarcodeScanner:
         raw = best.data.decode("utf-8", errors="ignore").strip()
         if not raw:
             return None
-        resolved_code, resolved_from_url = self._resolve_code(raw)
 
         rect = best.rect
         bbox = [int(rect.left), int(rect.top), int(rect.width), int(rect.height)]
         return _to_scan_payload(
-            code=resolved_code,
+            code=raw,
             symbology=str(best.type),
             bbox=bbox,
             frame_id=frame_id,
             source="pyzbar",
             preprocess=preprocess,
-            raw_code=raw if resolved_from_url else None,
-            resolved_from_url=resolved_from_url,
         )
 
     def _decode_with_qr_fallback(self, image: np.ndarray, frame_id: int, preprocess: str) -> dict | None:
@@ -353,7 +305,6 @@ class BarcodeScanner:
         if not text:
             return None
         raw = text.strip()
-        resolved_code, resolved_from_url = self._resolve_code(raw)
 
         bbox = [0, 0, 0, 0]
         if points is not None and len(points) > 0:
@@ -365,14 +316,12 @@ class BarcodeScanner:
             bbox = [x_min, y_min, max(0, x_max - x_min), max(0, y_max - y_min)]
 
         return _to_scan_payload(
-            code=resolved_code,
+            code=raw,
             symbology="QRCODE",
             bbox=bbox,
             frame_id=frame_id,
             source="opencv_qr_fallback",
             preprocess=preprocess,
-            raw_code=raw if resolved_from_url else None,
-            resolved_from_url=resolved_from_url,
         )
 
     def _resolve_code(self, raw_code: str) -> tuple[str, str | None]:
