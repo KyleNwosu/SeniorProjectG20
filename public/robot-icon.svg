@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="RoboControl smiley robot icon">
+  <rect width="64" height="64" rx="12" fill="#003A70" />
+
+  <rect x="24" y="8" width="16" height="5" rx="2.5" fill="#8BC4FF" />
+  <line x1="32" y1="8" x2="32" y2="4" stroke="#8BC4FF" stroke-width="2.5" stroke-linecap="round" />
+  <circle cx="32" cy="3" r="2" fill="#8BC4FF" />
+
+  <rect x="12" y="16" width="40" height="34" rx="9" fill="#D7ECFF" />
+  <circle cx="25" cy="31" r="4" fill="#003A70" />
+  <circle cx="39" cy="31" r="4" fill="#003A70" />
+  <path d="M23 40c2 4 6 6 9 6s7-2 9-6" fill="none" stroke="#003A70" stroke-width="3" stroke-linecap="round" />
+
+  <rect x="8" y="27" width="4" height="12" rx="2" fill="#8BC4FF" />
+  <rect x="52" y="27" width="4" height="12" rx="2" fill="#8BC4FF" />
+</svg>
