@@ -1,239 +1,185 @@
 # RoboControl - Consumer Robotics Interface
 
-A modern web application for controlling and managing consumer robotics devices. Built with React, TypeScript, and Tailwind CSS.
+RoboControl is a full-stack robotics control app with:
 
-## Features
+- a React + TypeScript frontend for operations, tasking, and scheduling
+- a FastAPI backend that bridges robot commands, telemetry, camera feed, and QR/barcode scanning
 
-- **Dashboard** - Overview of robot status, battery, connectivity, and direct control panel
-- **Control** - Dedicated control interface for robot movement and actions
-- **Tasks** - Build and manage robot tasks
-- **Schedule** - Schedule automated robot actions
+## Current UI Overview
+
+The app now uses task-based navigation:
+
+- **Operations** - live robot operation view (camera, primary controls, status, QR text, quick actions)
+- **Tasks** - build and queue command sequences
+- **Schedule** - automation schedule management
+- **History** - placeholder tab for future logs/event history
+
+Operations includes:
+
+- top **System Status** strip (connection, robot state, scanner state, last QR timestamp)
+- 60/40 layout (left: live operations, right: status + QR + quick actions)
+- collapsible **Advanced Controls** and **Diagnostics**
+- QR text card with copy/clear/details controls
+
+## Authentication
+
+The frontend uses local auth state in `localStorage` for now:
+
+- unauthenticated users are routed to `/auth`
+- authenticated users are routed to `/dashboard`
+- sign out is available in the top header
+
+Storage keys:
+
+- `robocontrol_auth_users`
+- `robocontrol_auth_session`
+
+> Note: This is demo-level auth (not production security).
+
+## QR / Barcode Text Resolution
+
+The scanner can detect QR codes that contain short URLs (e.g. `qrly.org/...`).
+The frontend then calls a dedicated backend resolver endpoint to extract text content so users do not need to leave the site.
+
+### Backend endpoints
+
+- `POST /api/barcode/start`
+- `POST /api/barcode/stop`
+- `GET /api/barcode/status`
+- `GET /api/barcode/latest`
+- `POST /api/barcode/resolve` (explicit URL-to-text resolution)
+
+### Resolution strategy
+
+The resolver prioritizes:
+
+1. `__NEXT_DATA__` payload text (Next.js pages)
+2. matching `<pre class="TextPreview...__pre">` block
+3. generic `<pre>` fallback
+
+It also includes timeout/cert fallback options configurable via env vars.
 
 ## Tech Stack
 
-- **Build Tool**: Vite 5
-- **Framework**: React 18
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS + shadcn/ui components
+- **Frontend**: React 18, TypeScript, Vite, Tailwind CSS, shadcn/ui
 - **Routing**: React Router v6
-- **State Management**: TanStack Query
-- **Forms**: React Hook Form + Zod validation
-- **Icons**: Lucide React
+- **State**: Zustand + TanStack Query
+- **Backend**: FastAPI + Uvicorn
+- **Robot/vision**: Kinova bridge + OpenCV + pyzbar fallback logic
 
 ## Prerequisites
 
-- **Node.js** (v18 or higher recommended)
-- **npm** (comes with Node.js) or **yarn**
+- Node.js 18+
+- npm
+- Python 3.11+ (recommended)
 
-If you don't have Node.js installed, use [nvm](https://github.com/nvm-sh/nvm#installing-and-updating) to manage versions:
+## Setup
+
+### 1) Clone
 
 ```bash
-# Install Node.js via nvm (recommended)
-nvm install 18
-nvm use 18
+git clone https://github.com/KyleNwosu/SeniorProjectG20.git
+cd SeniorProjectG20
 ```
 
-## Installation
+### 2) Frontend install
 
-1. **Clone the repository** (if you haven't already):
-   ```bash
-   git clone https://github.com/KyleNwosu/SeniorProjectG20.git
-   cd SeniorProjectG20
-   ```
+```bash
+npm install
+```
 
-2. **Install dependencies**:
-   ```bash
-   npm install
-   ```
+### 3) Frontend env (`.env`)
 
-   This will install all required packages listed in `package.json`.
+Create `.env` in repo root:
 
-## Development
+```env
+VITE_BRIDGE_URL=http://localhost:8000
+VITE_ROS_BRIDGE_URL=ws://localhost:9090
+```
 
-### Start the Development Server
+### 4) Backend env (`backend/.env`)
+
+Copy from `backend/.env.example`, then adjust as needed:
+
+```env
+ROBOT_IP=192.168.1.10
+ROBOT_PORT=10000
+ROBOT_USERNAME=admin
+ROBOT_PASSWORD=admin
+BRIDGE_PORT=8000
+
+CAMERA_RTSP_PATH=/color
+CAMERA_WIDTH=1280
+CAMERA_HEIGHT=720
+CAMERA_JPEG_QUALITY=80
+
+BARCODE_SCAN_FPS=10
+BARCODE_CONFIRM_FRAMES=3
+BARCODE_COOLDOWN_SEC=1.5
+BARCODE_ENABLE_CLAHE=true
+BARCODE_ENABLE_ADAPTIVE=true
+BARCODE_ENABLE_SHARPEN=false
+BARCODE_RESOLVE_URL_TEXT=true
+BARCODE_RESOLVE_TIMEOUT_SEC=6.0
+BARCODE_MAX_TEXT_CHARS=1200
+BARCODE_ALLOW_INSECURE_SSL_FALLBACK=true
+BARCODE_MAX_FETCH_BYTES=262144
+```
+
+## Run Locally
+
+### Backend
+
+```bash
+cd backend
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+uvicorn main:app --reload --port 8000
+```
+
+### Frontend
+
+In a separate terminal (repo root):
 
 ```bash
 npm run dev
 ```
 
-The app will be available at **http://localhost:8080** (or the URL shown in the terminal).
+Use the URL shown by Vite (typically `http://localhost:5173`).
 
-The dev server includes:
-- ✅ Hot Module Replacement (HMR) - changes reflect instantly
-- ✅ Fast refresh for React components
-- ✅ TypeScript type checking
-- ✅ Source maps for debugging
-
-### Available Scripts
-
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start development server (port 8080) |
-| `npm run build` | Build for production |
-| `npm run build:dev` | Build in development mode |
-| `npm run preview` | Preview production build locally |
-| `npm run lint` | Run ESLint to check code quality |
-
-## Testing the Application
-
-### Manual Testing Checklist
-
-1. **Start the dev server**:
-   ```bash
-   npm run dev
-   ```
-
-2. **Open the app** in your browser at `http://localhost:8080`
-
-3. **Test each tab**:
-   - ✅ **Dashboard** - Check robot status card (battery, connectivity), test control panel buttons
-   - ✅ **Control** - Verify robot status and control panel work side-by-side
-   - ✅ **Tasks** - Test task builder form and interactions
-   - ✅ **Schedule** - Test scheduler interface
-
-4. **Test interactions**:
-   - Click control buttons (arrows, play/pause, stop) - should show toast notifications
-   - Navigate between tabs - should switch smoothly
-   - Resize browser window - should be responsive
-
-5. **Check browser console**:
-   - Open DevTools (F12 or Cmd+Option+I)
-   - Look for any errors or warnings
-   - Should see no errors related to Lovable or missing dependencies
-
-### Build Testing
-
-Test that the production build works:
+## Useful Commands
 
 ```bash
-# Build the project
+npm run dev
 npm run build
-
-# Preview the production build
+npm run lint
 npm run preview
 ```
 
-The preview server will start (usually on port 4173). Open the URL shown to verify the production build works correctly.
-
-### Code Quality
-
-Run the linter to check for code issues:
+Backend syntax check:
 
 ```bash
-npm run lint
+python3 -m py_compile backend/services/barcode_scanner.py
 ```
 
-Fix any warnings or errors before committing.
+## Project Structure (High Level)
 
-## Project Structure
-
-```
-├── index.html              # Entry HTML file
-├── vite.config.ts          # Vite configuration
-├── tailwind.config.ts      # Tailwind CSS configuration
-├── tsconfig.json           # TypeScript configuration
-├── components.json         # shadcn/ui configuration
-├── public/                 # Static assets
-│   ├── robots.txt
-│   └── placeholder.svg
-└── src/
-    ├── main.tsx            # Application entry point
-    ├── App.tsx             # Root component with routing
-    ├── index.css           # Global styles
-    ├── pages/
-    │   ├── Index.tsx       # Main page with tabs
-    │   └── NotFound.tsx    # 404 page
-    ├── components/
-    │   ├── RobotStatus.tsx    # Robot status card
-    │   ├── ControlPanel.tsx  # Control interface
-    │   ├── TaskBuilder.tsx   # Task creation
-    │   ├── Scheduler.tsx      # Schedule management
-    │   └── ui/               # shadcn/ui components
-    ├── hooks/               # Custom React hooks
-    └── lib/                 # Utility functions
+```text
+backend/
+  main.py
+  routes/
+  services/
+src/
+  pages/
+    Auth.tsx
+    Index.tsx
+  components/
+  services/
+  store/
 ```
 
-## Path Aliases
+## Notes
 
-The project uses TypeScript path aliases for cleaner imports:
-
-- `@/*` → `./src/*`
-
-Example:
-```typescript
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
-```
-
-## Troubleshooting
-
-### Port Already in Use
-
-If port 8080 is already in use, Vite will automatically try the next available port. You can also specify a different port:
-
-```bash
-npm run dev -- --port 3000
-```
-
-### Module Not Found Errors
-
-If you see module resolution errors:
-
-```bash
-# Delete node_modules and reinstall
-rm -rf node_modules package-lock.json
-npm install
-```
-
-### TypeScript Errors
-
-If TypeScript shows errors:
-
-```bash
-# Check TypeScript version matches package.json
-npm list typescript
-
-# Restart your IDE/editor to reload TypeScript server
-```
-
-## Deployment
-
-### Build for Production
-
-```bash
-npm run build
-```
-
-This creates an optimized `dist/` folder with:
-- Minified JavaScript and CSS
-- Optimized assets
-- Production-ready HTML
-
-### Deploy Options
-
-The `dist/` folder can be deployed to any static hosting service:
-
-- **Vercel**: `vercel --prod`
-- **Netlify**: Drag and drop `dist/` folder
-- **GitHub Pages**: Use GitHub Actions or manual upload
-- **AWS S3**: Upload `dist/` contents to an S3 bucket
-- **Any web server**: Copy `dist/` contents to your server's public directory
-
-## Contributing
-
-1. Create a feature branch
-2. Make your changes
-3. Test locally with `npm run dev`
-4. Run linter: `npm run lint`
-5. Commit and push your changes
-
-## License
-
-[Add your license here]
-
-## Additional Resources
-
-- [Vite Documentation](https://vitejs.dev/)
-- [React Documentation](https://react.dev/)
-- [Tailwind CSS Documentation](https://tailwindcss.com/)
-- [shadcn/ui Components](https://ui.shadcn.com/)
+- If QR text still appears as raw URL, restart backend to clear in-memory resolver cache.
+- If the backend cannot verify SSL certs in your local Python environment, insecure SSL fallback is available via env flag (enabled by default in example).
