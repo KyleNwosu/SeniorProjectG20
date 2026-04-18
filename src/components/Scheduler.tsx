@@ -2,13 +2,27 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Clock, Plus, Trash2 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { useScheduleStore } from "@/store/useScheduleStore";
+import { fetchSavedActions } from "@/services/robotApi";
 import type { ScheduledTask, ScheduleFrequency } from "@/types";
 
 export const Scheduler = () => {
-  const { schedules, addSchedule, removeSchedule, updateSchedule } = useScheduleStore();
+  const { schedules, addSchedule, removeSchedule, updateSchedule } =
+    useScheduleStore();
+
+  const { data: savedActions = [] } = useQuery({
+    queryKey: ["savedActions"],
+    queryFn: fetchSavedActions,
+  });
 
   return (
     <Card>
@@ -21,7 +35,10 @@ export const Scheduler = () => {
       <CardContent className="space-y-4">
         <div className="space-y-3">
           {schedules.map((schedule) => (
-            <div key={schedule.id} className="flex gap-2 items-end p-3 border rounded-md bg-muted/30">
+            <div
+              key={schedule.id}
+              className="flex gap-2 items-end p-3 border rounded-md bg-muted/30"
+            >
               <div className="flex-1 space-y-2">
                 <Label className="text-xs text-muted-foreground">Task</Label>
                 <Select
@@ -37,6 +54,11 @@ export const Scheduler = () => {
                     <SelectItem value="home">Go to Home Position</SelectItem>
                     <SelectItem value="retract">Retract Arm</SelectItem>
                     <SelectItem value="custom">Custom Sequence</SelectItem>
+                    {savedActions.map((a) => (
+                      <SelectItem key={a.name} value={a.name}>
+                        {a.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -46,16 +68,24 @@ export const Scheduler = () => {
                 <Input
                   type="time"
                   value={schedule.time}
-                  onChange={(e) => updateSchedule(schedule.id, "time", e.target.value)}
+                  onChange={(e) =>
+                    updateSchedule(schedule.id, "time", e.target.value)
+                  }
                 />
               </div>
 
               <div className="w-32 space-y-2">
-                <Label className="text-xs text-muted-foreground">Frequency</Label>
+                <Label className="text-xs text-muted-foreground">
+                  Frequency
+                </Label>
                 <Select
                   value={schedule.frequency}
                   onValueChange={(value) =>
-                    updateSchedule(schedule.id, "frequency", value as ScheduleFrequency)
+                    updateSchedule(
+                      schedule.id,
+                      "frequency",
+                      value as ScheduleFrequency,
+                    )
                   }
                 >
                   <SelectTrigger>
@@ -89,8 +119,8 @@ export const Scheduler = () => {
           </Button>
         </div>
         <p className="text-xs text-muted-foreground pt-2">
-          Schedules persist automatically in this browser (local storage). No separate save step is
-          required.
+          Schedules persist automatically in this browser (local storage). No
+          separate save step is required.
         </p>
       </CardContent>
     </Card>
